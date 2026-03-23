@@ -14,7 +14,7 @@
     --cyan: #00e5ff; --cyan-dim: rgba(0,229,255,0.1); --cyan-glow: rgba(0,229,255,0.3);
     --green: #00ff9d; --green-dim: rgba(0,255,157,0.1);
     --yellow: #ffd600; --red: #ff3d5a;
-    --text-primary: #e8f4ff; --text-secondary: #7a9bb5; --text-muted: #3a5570;
+    --text-primary: #e8f4ff; --text-secondary: #b0cfe8; --text-muted: #6b90ad;
     --border: rgba(0,229,255,0.12); --border-accent: rgba(213,80,18,0.3);
     --nav-width: 62px; --font-head: 'Orbitron',monospace; --font-data: 'JetBrains Mono',monospace; --font-body: 'Outfit',sans-serif;
   }
@@ -76,6 +76,11 @@
   .loading-pulse{animation:pulse 1.5s infinite;}
   @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
   @keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+
+  .period-filter{display:flex;gap:4px;align-items:center;}
+  .period-btn{font-family:var(--font-data);font-size:9px;letter-spacing:0.1em;padding:5px 12px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;transition:all 0.15s;text-transform:uppercase;}
+  .period-btn:hover{border-color:var(--cyan);color:var(--cyan);}
+  .period-btn.active{border-color:var(--accent);background:var(--accent-dim);color:var(--accent);}
 </style>
 </head>
 <body>
@@ -117,6 +122,12 @@
       <div class="subtitle">PLATFORM ANALYTICS — REAL-TIME DATA</div>
     </div>
     <div style="display:flex;align-items:center;gap:10px;">
+      <div class="period-filter">
+        <button class="period-btn active" onclick="setPeriod('all', this)">Alles</button>
+        <button class="period-btn" onclick="setPeriod('year', this)">Jaar</button>
+        <button class="period-btn" onclick="setPeriod('month', this)">Maand</button>
+        <button class="period-btn" onclick="setPeriod('week', this)">Week</button>
+      </div>
       <button class="refresh-btn" id="refreshBtn" onclick="refreshAllData()">↻ Refresh Data</button>
       <span class="last-refresh" id="lastRefresh"></span>
     </div>
@@ -242,6 +253,31 @@
     alert('Toegevoegd aan Pipeline Ideas! Open Pipeline om te zien.');
   }
 
+  let currentPeriod = 'all';
+  let cachedData = { tiktok: null, instagram: null, youtube: null };
+
+  function setPeriod(period, btn) {
+    currentPeriod = period;
+    document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    if (cachedData.tiktok) renderTikTok(cachedData.tiktok);
+    if (cachedData.instagram) renderInstagram(cachedData.instagram);
+    if (cachedData.youtube) renderYouTube(cachedData.youtube);
+  }
+
+  function filterByPeriod(posts) {
+    if (currentPeriod === 'all' || !posts) return posts;
+    const now = new Date();
+    const cutoff = new Date();
+    if (currentPeriod === 'week') cutoff.setDate(now.getDate() - 7);
+    else if (currentPeriod === 'month') cutoff.setMonth(now.getMonth() - 1);
+    else if (currentPeriod === 'year') cutoff.setFullYear(now.getFullYear() - 1);
+    return posts.filter(p => {
+      if (!p.timestamp) return true;
+      return new Date(p.timestamp) >= cutoff;
+    });
+  }
+
   function loadCachedData() {
     const ts = localStorage.getItem('ctrl_last_refresh');
     if (ts) {
@@ -265,11 +301,16 @@
   }
 
   function renderTikTok(data) {
+    cachedData.tiktok = data;
     if (data.followers) document.getElementById('tt-total-followers').textContent = fmtNum(data.followers);
     if (data.posts) document.getElementById('tt-total-posts').textContent = fmtNum(data.posts);
-    if (!data.posts_data || !data.posts_data.length) return;
+    const filtered = filterByPeriod(data.posts_data);
+    if (!filtered || !filtered.length) {
+      document.getElementById('tt-table-body').innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px;font-family:var(--font-data);font-size:10px;">Geen posts in deze periode</td></tr>';
+      return;
+    }
     const tbody = document.getElementById('tt-table-body');
-    tbody.innerHTML = data.posts_data.map(p => {
+    tbody.innerHTML = filtered.map(p => {
       const er = p.followers > 0 ? ((p.likes + p.comments) / p.followers * 100).toFixed(1) : '—';
       return `<tr>
         <td><div class="post-title">${p.title || p.text || 'Post'}</div><div class="post-date">${p.date || ''}</div></td>
@@ -284,11 +325,16 @@
   }
 
   function renderInstagram(data) {
+    cachedData.instagram = data;
     if (data.followers) document.getElementById('ig-total-followers').textContent = fmtNum(data.followers);
     if (data.posts) document.getElementById('ig-total-posts').textContent = fmtNum(data.posts);
-    if (!data.posts_data || !data.posts_data.length) return;
+    const filtered = filterByPeriod(data.posts_data);
+    if (!filtered || !filtered.length) {
+      document.getElementById('ig-table-body').innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px;font-family:var(--font-data);font-size:10px;">Geen posts in deze periode</td></tr>';
+      return;
+    }
     const tbody = document.getElementById('ig-table-body');
-    tbody.innerHTML = data.posts_data.map(p => {
+    tbody.innerHTML = filtered.map(p => {
       const er = data.followers > 0 ? ((p.likes + p.comments) / data.followers * 100).toFixed(1) : '—';
       return `<tr>
         <td><div class="post-title">${p.title || p.caption || 'Post'}</div><div class="post-date">${p.date || ''}</div></td>
@@ -303,14 +349,16 @@
   }
 
   function renderYouTube(data) {
+    cachedData.youtube = data;
     if (data.subscribers) document.getElementById('yt-total-subs').textContent = fmtNum(data.subscribers);
     if (data.videos) document.getElementById('yt-total-videos').textContent = fmtNum(data.videos);
-    if (!data.posts_data || !data.posts_data.length) {
-      document.getElementById('yt-table-body').innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px;font-family:var(--font-data);font-size:10px;">No content yet</td></tr>';
+    const filtered = filterByPeriod(data.posts_data);
+    if (!filtered || !filtered.length) {
+      document.getElementById('yt-table-body').innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px;font-family:var(--font-data);font-size:10px;">Geen videos in deze periode</td></tr>';
       return;
     }
     const tbody = document.getElementById('yt-table-body');
-    tbody.innerHTML = data.posts_data.map(p => {
+    tbody.innerHTML = filtered.map(p => {
       return `<tr>
         <td><div class="post-title">${p.title || 'Video'}</div><div class="post-date">${p.date || ''}</div></td>
         <td><span class="metric-val cyan">${fmtNum(p.views)}</span></td>

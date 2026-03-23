@@ -105,6 +105,7 @@ function processTikTok(rawItems) {
   const posts = rawItems.slice(0, 10).map(item => ({
     title: (item.text || 'TikTok Post').substring(0, 80),
     date: item.createTimeISO ? new Date(item.createTimeISO).toLocaleDateString('nl-NL') : '',
+    timestamp: item.createTimeISO || null,
     views: item.playCount || 0, likes: item.diggCount || 0, comments: item.commentCount || 0,
   }));
   const avgViews = posts.length ? Math.round(posts.reduce((s, p) => s + p.views, 0) / posts.length) : 0;
@@ -116,14 +117,18 @@ function processTikTok(rawItems) {
 
 function processInstagram(rawItems) {
   if (!rawItems || rawItems.length === 0) return null;
-  const profile = rawItems.find(i => i.followersCount !== undefined) || rawItems[0];
+  // resultsType:'details' returns a profile object with latestPosts nested inside
+  const profile = rawItems[0];
   const followers = profile.followersCount || 0;
-  const postCount = profile.postsCount || rawItems.length;
-  const postItems = rawItems.filter(i => i.likesCount !== undefined).slice(0, 10);
-  const posts = postItems.map(item => ({
+  const postCount = profile.postsCount || 0;
+  const rawPosts = profile.latestPosts || [];
+  const posts = rawPosts.slice(0, 10).map(item => ({
     title: (item.caption || 'Instagram Post').substring(0, 80),
     date: item.timestamp ? new Date(item.timestamp).toLocaleDateString('nl-NL') : '',
-    likes: item.likesCount || 0, comments: item.commentsCount || 0,
+    timestamp: item.timestamp || null,
+    likes: item.likesCount || 0,
+    comments: item.commentsCount || 0,
+    views: item.videoViewCount || 0,
   }));
   const avgLikes = posts.length ? Math.round(posts.reduce((s, p) => s + p.likes, 0) / posts.length) : 0;
   const engRate = followers > 0 && posts.length > 0
@@ -147,6 +152,7 @@ async function fetchYouTube() {
   const videos = raw.filter(i => i.viewCount !== undefined || i.views !== undefined).slice(0, 10).map(item => ({
     title:    (item.title || 'Video').substring(0, 80),
     date:     item.publishedAt ? new Date(item.publishedAt).toLocaleDateString('nl-NL') : '',
+    timestamp: item.publishedAt || null,
     views:    item.viewCount    || item.views    || 0,
     likes:    item.likeCount    || item.likes    || 0,
     comments: item.commentCount || item.comments || 0,
@@ -248,7 +254,9 @@ const server = http.createServer(async (req, res) => {
     try {
       console.log('  Refreshing Instagram...');
       const raw = await runApifyActor(IG_ACTOR_ID, {
-        usernames: [IG_USERNAME], resultsType: 'posts', resultsLimit: 10
+        directUrls: [`https://www.instagram.com/${IG_USERNAME}/`],
+        resultsType: 'details',
+        resultsLimit: 1
       });
       const data = processInstagram(raw);
       if (data) {
@@ -278,6 +286,34 @@ const server = http.createServer(async (req, res) => {
       console.error('YouTube refresh error:', e.message);
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: e.message }));
+    }
+    return;
+  }
+
+  // ── GET /debug/instagram ───────────────────────────────
+  if (req.method === 'GET' && url === '/debug/instagram') {
+    try {
+      const raw = await runApifyActor(IG_ACTOR_ID, {
+        usernames: [IG_USERNAME], resultsType: 'posts', resultsLimit: 3
+      });
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ count: raw.length, first_item: raw[0] || null, keys_first: raw[0] ? Object.keys(raw[0]) : [] }, null, 2));
+    } catch(e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: e.message }));
+    }
+    return;
+  }
+
+  // ── GET /topics ────────────────────────────────────────
+  if (req.method === 'GET' && url === '/topics') {
+    const topicsFile = path.join(__dirname, 'data', 'topics.json');
+    if (fs.existsSync(topicsFile)) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(fs.readFileSync(topicsFile));
+    } else {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify([]));
     }
     return;
   }

@@ -25,8 +25,8 @@
     --yellow-dim: rgba(255, 214, 0, 0.1);
     --red: #ff3d5a;
     --text-primary: #e8f4ff;
-    --text-secondary: #7a9bb5;
-    --text-muted: #3a5570;
+    --text-secondary: #b0cfe8;
+    --text-muted: #6b90ad;
     --border: rgba(0, 229, 255, 0.12);
     --border-accent: rgba(213, 80, 18, 0.3);
     --nav-width: 62px;
@@ -260,55 +260,45 @@
     border: 1px solid var(--border);
   }
 
-  /* ─── BRIEFING BANNER ─── */
-  .briefing-banner {
-    background: linear-gradient(135deg, var(--bg-elevated) 0%, rgba(213, 80, 18, 0.08) 100%);
-    border: 1px solid var(--border-accent);
+  /* ─── BEST POST TIMES ─── */
+  .post-times-banner {
+    background: linear-gradient(135deg, var(--bg-elevated) 0%, rgba(0,229,255,0.04) 100%);
+    border: 1px solid var(--border);
     border-radius: 10px;
-    padding: 16px 20px;
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 20px;
+    padding: 14px 18px;
     margin-bottom: 20px;
     animation: fadeUp 0.5s 0.1s ease both;
     position: relative;
     overflow: hidden;
   }
-
-  .briefing-banner::before {
-    content: 'TODAY\'S BRIEFING';
+  .post-times-banner::before {
+    content: 'BESTE POSTTIJDEN';
     position: absolute;
     top: 10px; right: 16px;
     font-family: var(--font-head);
     font-size: 8px;
     letter-spacing: 0.2em;
-    color: var(--accent);
-    opacity: 0.6;
+    color: var(--cyan);
+    opacity: 0.5;
   }
-
-  .briefing-item h4 {
-    font-family: var(--font-data);
-    font-size: 9px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    margin-bottom: 6px;
+  .post-times-grid {
+    display: grid;
+    grid-template-columns: 70px repeat(7, 1fr);
+    gap: 4px;
+    margin-top: 6px;
   }
-
-  .briefing-value {
-    font-family: var(--font-head);
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--accent);
-    line-height: 1;
-  }
-
-  .briefing-sub {
-    font-family: var(--font-data);
-    font-size: 10px;
-    color: var(--text-secondary);
-    margin-top: 4px;
-  }
+  .pt-header { font-family:var(--font-data);font-size:8px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);text-align:center;padding:4px 2px; }
+  .pt-header.today { color:var(--cyan);font-weight:700; }
+  .pt-platform { font-family:var(--font-data);font-size:9px;color:var(--text-secondary);display:flex;align-items:center;gap:5px;padding:2px 0; }
+  .pt-dot { width:6px;height:6px;border-radius:50%;flex-shrink:0; }
+  .pt-cell { border-radius:4px;padding:4px 3px;text-align:center;font-family:var(--font-data);font-size:8px;background:var(--bg-surface);color:transparent;min-height:28px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1px; }
+  .pt-cell.active { color:var(--text-primary); }
+  .pt-cell.today-col { border:1px solid rgba(0,229,255,0.2); }
+  .pt-cell.best { font-weight:600; }
+  .pt-cell.best.tiktok { background:rgba(0,242,234,0.12);color:#00f2ea; }
+  .pt-cell.best.instagram { background:rgba(230,104,60,0.12);color:#e6683c; }
+  .pt-cell.best.youtube { background:rgba(255,68,68,0.12);color:#ff4444; }
+  .pt-time { font-size:8px;line-height:1.2; }
 
   /* ─── SOCIAL PERFORMANCE CARDS ─── */
   .social-grid {
@@ -442,6 +432,7 @@
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: 8px;
+    cursor: pointer;
     padding: 12px;
     transition: all 0.2s;
   }
@@ -764,6 +755,17 @@
   .agents-grid .agent-card:nth-child(3) { animation: fadeUp 0.4s 0.4s ease both; }
   .agents-grid .agent-card:nth-child(4) { animation: fadeUp 0.4s 0.45s ease both; }
   .agents-grid .agent-card:nth-child(5) { animation: fadeUp 0.4s 0.5s ease both; }
+
+  .period-dash-btn{font-family:var(--font-data);font-size:8px;letter-spacing:0.08em;padding:4px 10px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;transition:all 0.15s;text-transform:uppercase;white-space:nowrap;}
+  .period-dash-btn:hover{border-color:var(--cyan);color:var(--cyan);}
+  .period-dash-btn.active{border-color:var(--accent);background:var(--accent-dim);color:var(--accent);}
+
+  .refresh-main-btn{position:relative;overflow:hidden;font-family:var(--font-data);font-size:10px;letter-spacing:0.1em;padding:7px 14px;border-radius:6px;border:1px solid var(--cyan);background:var(--cyan-dim);color:var(--cyan);cursor:pointer;transition:color 0.15s,border-color 0.15s;}
+  .refresh-main-btn:hover:not(:disabled){background:rgba(0,229,255,0.18);}
+  .refresh-main-btn:disabled{cursor:not-allowed;opacity:0.8;}
+  .refresh-main-btn::before{content:'';position:absolute;inset:0;background:var(--cyan-dim);width:0%;transition:none;}
+  .refresh-main-btn.loading::before{animation:fillBtn 3s linear forwards;}
+  @keyframes fillBtn{0%{width:0%;}85%{width:90%;}100%{width:90%;}}
 </style>
 </head>
 <body>
@@ -898,37 +900,25 @@
         <div class="subtitle">AI OPERATIONS DASHBOARD // OVERVIEW</div>
       </div>
       <div class="topbar-right">
-        <button id="refreshBtn" onclick="refreshLiveData()" style="font-family:var(--font-data);font-size:10px;letter-spacing:0.1em;padding:7px 14px;border-radius:6px;border:1px solid var(--cyan);background:var(--cyan-dim);color:var(--cyan);cursor:pointer;transition:all 0.15s;">↻ Refresh Live Data</button>
+        <button id="refreshBtn" class="refresh-main-btn" onclick="refreshLiveData()">↻ Refresh Live Data</button>
         <span id="lastRefreshLabel" style="font-family:var(--font-data);font-size:9px;color:var(--text-muted);"></span>
         <span class="status-pill">ALL SYSTEMS ONLINE</span>
         <span class="date-chip" id="dateChip">MON 23 MAR 2026</span>
       </div>
     </div>
 
-    <!-- Today's Briefing -->
-    <div class="briefing-banner">
-      <div class="briefing-item">
-        <h4>Scheduled Posts Today</h4>
-        <div class="briefing-value">3</div>
-        <div class="briefing-sub">TikTok 12:00 · IG 18:00 · YT 20:00</div>
-      </div>
-      <div class="briefing-item">
-        <h4>Scripts Due Today</h4>
-        <div class="briefing-value">2</div>
-        <div class="briefing-sub">"10 AI tools" · "Hoe je viraal gaat"</div>
-      </div>
-      <div class="briefing-item">
-        <h4>Top Post This Week</h4>
-        <div class="briefing-value" style="font-size:14px;line-height:1.2;color:var(--cyan);">"AI vervangt jouw concurrent..."</div>
-        <div class="briefing-sub">TikTok · 48.2K views · 6.8% ER</div>
-      </div>
-    </div>
+    <!-- Best Post Times -->
+    <div class="post-times-banner" id="postTimesBanner"></div>
 
     <!-- Social Performance -->
     <div class="section-header">
       <span class="section-title">Social Performance</span>
       <div class="section-line"></div>
-      <span class="section-count">3 platforms</span>
+      <div style="display:flex;gap:4px;">
+        <button class="period-dash-btn active" onclick="setDashPeriod('7d',this)">7 dagen</button>
+        <button class="period-dash-btn" onclick="setDashPeriod('30d',this)">30 dagen</button>
+        <button class="period-dash-btn" onclick="setDashPeriod('1y',this)">1 jaar</button>
+      </div>
     </div>
 
     <div class="social-grid">
@@ -1048,35 +1038,35 @@
     </div>
 
     <div class="agents-grid">
-      <div class="agent-card">
+      <div class="agent-card" onclick="location.href='agents.html#scout'">
         <div class="agent-avatar" style="background:rgba(0,229,255,0.1);border:1px solid rgba(0,229,255,0.2);">🔍</div>
         <div class="agent-name">Scout</div>
         <div class="agent-role">Trend Research</div>
         <span class="agent-status status-active">ACTIVE</span>
         <div class="agent-progress"><div class="agent-progress-fill" style="width:72%;background:var(--cyan);"></div></div>
       </div>
-      <div class="agent-card">
+      <div class="agent-card" onclick="location.href='agents.html#writer'">
         <div class="agent-avatar" style="background:rgba(213,80,18,0.1);border:1px solid rgba(213,80,18,0.2);">✍️</div>
         <div class="agent-name">Writer</div>
         <div class="agent-role">Script Generator</div>
         <span class="agent-status status-busy">WRITING</span>
         <div class="agent-progress"><div class="agent-progress-fill" style="width:45%;background:var(--accent);"></div></div>
       </div>
-      <div class="agent-card">
+      <div class="agent-card" onclick="location.href='agents.html#analyst'">
         <div class="agent-avatar" style="background:rgba(0,255,157,0.1);border:1px solid rgba(0,255,157,0.2);">📊</div>
         <div class="agent-name">Analyst</div>
         <div class="agent-role">Data & Insights</div>
         <span class="agent-status status-active">ACTIVE</span>
         <div class="agent-progress"><div class="agent-progress-fill" style="width:88%;background:var(--green);"></div></div>
       </div>
-      <div class="agent-card">
+      <div class="agent-card" onclick="location.href='agents.html#scheduler'">
         <div class="agent-avatar" style="background:rgba(255,214,0,0.1);border:1px solid rgba(255,214,0,0.2);">📅</div>
         <div class="agent-name">Scheduler</div>
         <div class="agent-role">Content Planning</div>
         <span class="agent-status status-idle">IDLE</span>
         <div class="agent-progress"><div class="agent-progress-fill" style="width:20%;background:var(--yellow);"></div></div>
       </div>
-      <div class="agent-card">
+      <div class="agent-card" onclick="location.href='agents.html#optimizer'">
         <div class="agent-avatar" style="background:rgba(213,80,18,0.1);border:1px solid rgba(213,80,18,0.2);">🎯</div>
         <div class="agent-name">Optimizer</div>
         <div class="agent-role">Hook & CTA Testing</div>
@@ -1095,20 +1085,9 @@
       <div class="kanban-col">
         <div class="kanban-col-header">
           <span class="col-title">Ideas</span>
-          <span class="col-count">3</span>
+          <span class="col-count" id="ideas-count">0</span>
         </div>
-        <div class="kanban-card">
-          <div class="kanban-card-title">10 dingen die je nooit leert op school over geld</div>
-          <div class="kanban-card-meta"><span class="tag tag-tiktok">TikTok</span></div>
-        </div>
-        <div class="kanban-card">
-          <div class="kanban-card-title">Hoe AI jouw workflow 10x sneller maakt</div>
-          <div class="kanban-card-meta"><span class="tag tag-ig">IG</span><span class="tag tag-tiktok">TikTok</span></div>
-        </div>
-        <div class="kanban-card">
-          <div class="kanban-card-title">De tool die mijn business redde</div>
-          <div class="kanban-card-meta"><span class="tag tag-yt">YT</span></div>
-        </div>
+        <div id="ideas-col-body"></div>
       </div>
 
       <div class="kanban-col">
@@ -1239,6 +1218,136 @@
   document.getElementById('dateChip').textContent =
     `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
 
+  // ── NEDERLANDSE FEESTDAGEN ───────────────────────────────
+  function easterDate(year) {
+    const a=year%19,b=Math.floor(year/100),c=year%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25);
+    const g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4;
+    const l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451);
+    const month=Math.floor((h+l-7*m+114)/31),day=((h+l-7*m+114)%31)+1;
+    return new Date(year,month-1,day);
+  }
+
+  function getDutchHolidays(year) {
+    const easter = easterDate(year);
+    const add = (d,n) => { const r=new Date(d); r.setDate(r.getDate()+n); return r; };
+    const key = d => `${d.getMonth()+1}-${d.getDate()}`;
+    return {
+      [key(new Date(year,0,1))]:   { name:'Nieuwjaarsdag',  advice:'bad',     icon:'🎉', reason:'Mensen bijkomen van oud & nieuw — scrollen minimaal' },
+      [key(add(easter,-2))]:       { name:'Goede Vrijdag',  advice:'good',    icon:'✝️',  reason:'Start lang weekend, mensen thuis en ontspannen — goed scrollmoment' },
+      [key(easter)]:               { name:'1e Paasdag',     advice:'neutral', icon:'🐣', reason:'Familiebezoek overdag, scrollgedrag wisselend — post vroeg of laat op de avond' },
+      [key(add(easter,1))]:        { name:'2e Paasdag',     advice:'great',   icon:'🐣', reason:'Tweede rustdag thuis — mensen scrollen veel, hoog bereik verwacht' },
+      [key(new Date(year,3,27))]:  { name:'Koningsdag',     advice:'bad',     icon:'🧡', reason:'Iedereen buiten aan het feesten — bereik extreem laag, niet posten' },
+      [key(new Date(year,4,5))]:   { name:'Bevrijdingsdag', advice:'neutral', icon:'🕊️', reason:'Vrije dag, mix van buiten en thuis — middag (14:00–16:00) kan werken' },
+      [key(add(easter,39))]:       { name:'Hemelvaartsdag', advice:'good',    icon:'⛅', reason:'Start lang weekend, mensen relaxen — avond is sterk scrollmoment' },
+      [key(add(easter,49))]:       { name:'1e Pinksterdag', advice:'neutral', icon:'🌿', reason:'Zomers weekend, wisselend — zorg voor visueel sterke content' },
+      [key(add(easter,50))]:       { name:'2e Pinksterdag', advice:'good',    icon:'🌿', reason:'Tweede vrije dag, mensen thuis — goed scrollmoment' },
+      [key(new Date(year,11,5))]:  { name:'Sinterklaas',    advice:'bad',     icon:'🎅', reason:'Pakjesavond — families druk, bereik zeer laag' },
+      [key(new Date(year,11,24))]: { name:'Kerstavond',     advice:'bad',     icon:'🎄', reason:'Iedereen met familie en voorbereidingen bezig — niet posten' },
+      [key(new Date(year,11,25))]: { name:'1e Kerstdag',    advice:'good',    icon:'🎁', reason:'Mensen thuis met familie, scrollen tussendoor — post rond 15:00' },
+      [key(new Date(year,11,26))]: { name:'2e Kerstdag',    advice:'great',   icon:'🎁', reason:'Tweede dag thuis — topdag voor engagement, hoogste scrollvolume van het jaar' },
+      [key(new Date(year,11,31))]: { name:'Oudejaarsavond', advice:'bad',     icon:'🥂', reason:'Iedereen bezig met jaarwisseling — bereik minimaal' },
+    };
+  }
+
+  // ── BESTE POSTTIJDEN ────────────────────────────────────
+  (function buildPostTimes() {
+    const dayNames = ['Ma','Di','Wo','Do','Vr','Za','Zo'];
+    const schedule = {
+      tiktok:    ['18:00','07:00','18:00',null,'18:00','10:00','12:00'],
+      instagram: ['11:00',null,'19:00','11:00','17:00','10:00',null],
+      youtube:   [null,null,null,'17:00',null,'17:00','18:00'],
+    };
+    const labels = { tiktok:'TikTok', instagram:'Instagram', youtube:'YouTube' };
+    const colors = { tiktok:'#00f2ea', instagram:'#e6683c', youtube:'#ff4444' };
+    const adviceStyle = {
+      bad:     { color:'#ff3d5a', bg:'rgba(255,61,90,0.08)',   border:'rgba(255,61,90,0.3)',   label:'✕ Niet posten' },
+      neutral: { color:'#ffd600', bg:'rgba(255,214,0,0.08)',  border:'rgba(255,214,0,0.3)',   label:'~ Wisselend' },
+      good:    { color:'#00ff9d', bg:'rgba(0,255,157,0.08)',  border:'rgba(0,255,157,0.3)',   label:'✓ Goed moment' },
+      great:   { color:'#00ff9d', bg:'rgba(0,255,157,0.13)', border:'rgba(0,255,157,0.5)',   label:'★ Top moment' },
+    };
+
+    const now = new Date();
+    const mon = new Date(now);
+    mon.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+    const todayIdx = (now.getDay() + 6) % 7;
+    const holidays = getDutchHolidays(now.getFullYear());
+
+    const weekDays = Array.from({length:7}, (_,i) => {
+      const d = new Date(mon); d.setDate(mon.getDate() + i);
+      const hkey = `${d.getMonth()+1}-${d.getDate()}`;
+      return { d, holiday: holidays[hkey] || null };
+    });
+
+    let html = '<div class="post-times-grid">';
+
+    // Dag headers
+    html += '<div class="pt-header"></div>';
+    weekDays.forEach((wd, i) => {
+      const isToday = i === todayIdx;
+      const h = wd.holiday;
+      const s = h ? adviceStyle[h.advice] : null;
+      const borderStyle = h ? `border-bottom:2px solid ${s.color};` : '';
+      const tooltip = h ? `title="${h.icon} ${h.name}: ${h.reason}"` : '';
+      html += `<div class="pt-header${isToday?' today':''}" style="${borderStyle}cursor:${h?'help':'default'}" ${tooltip}>
+        ${dayNames[i]}<br>${wd.d.getDate()}
+        ${h ? `<div style="font-size:6px;margin-top:2px;color:${s.color};letter-spacing:0.03em;">${h.icon}</div>` : ''}
+      </div>`;
+    });
+
+    // Feestdag adviesrij
+    html += '<div class="pt-header" style="font-size:7px;">Feestdag</div>';
+    weekDays.forEach((wd, i) => {
+      const isToday = i === todayIdx;
+      const h = wd.holiday;
+      if (h) {
+        const s = adviceStyle[h.advice];
+        html += `<div class="pt-cell" style="background:${s.bg};border:1px solid ${s.border};min-height:22px;cursor:help;padding:3px;" title="${h.icon} ${h.name}: ${h.reason}">
+          <span style="font-size:7px;color:${s.color};font-weight:600;line-height:1.3;text-align:center;display:block;">${s.label}</span>
+        </div>`;
+      } else {
+        html += `<div class="pt-cell${isToday?' today-col':''}" style="min-height:22px;"></div>`;
+      }
+    });
+
+    // Platform rijen
+    ['instagram','tiktok','youtube'].forEach(p => {
+      html += `<div class="pt-platform"><div class="pt-dot" style="background:${colors[p]}"></div>${labels[p]}</div>`;
+      weekDays.forEach((wd, i) => {
+        const time = schedule[p][i];
+        const isToday = i === todayIdx;
+        const suppress = wd.holiday && wd.holiday.advice === 'bad';
+        const cls = ['pt-cell', isToday?'today-col':'', (time && !suppress)?`best ${p}`:''].filter(Boolean).join(' ');
+        const content = suppress
+          ? `<span style="font-size:9px;opacity:0.25;">—</span>`
+          : time ? `<span class="pt-time">${time}</span>` : '';
+        html += `<div class="${cls}">${content}</div>`;
+      });
+    });
+
+    html += '</div>';
+    document.getElementById('postTimesBanner').innerHTML = html;
+  })();
+
+  let dashPeriod = '7d';
+
+  function setDashPeriod(period, btn) {
+    dashPeriod = period;
+    document.querySelectorAll('.period-dash-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    loadCachedSocial();
+  }
+
+  function filterPostsByPeriod(posts) {
+    if (!posts || dashPeriod === 'all') return posts;
+    const now = new Date();
+    const cutoff = new Date();
+    if (dashPeriod === '7d') cutoff.setDate(now.getDate() - 7);
+    else if (dashPeriod === '30d') cutoff.setMonth(now.getMonth() - 1);
+    else if (dashPeriod === '1y') cutoff.setFullYear(now.getFullYear() - 1);
+    const filtered = posts.filter(p => p.timestamp && new Date(p.timestamp) >= cutoff);
+    return filtered.length > 0 ? filtered : posts; // fallback to all if nothing matches
+  }
+
   // Load cached social data
   function fmtNum(n) {
     if (!n && n !== 0) return '—';
@@ -1271,7 +1380,15 @@
     `;
   }
 
-  function loadCachedData() {
+  function calcStats(posts_data, metric, metric2) {
+    const posts = filterPostsByPeriod(posts_data);
+    if (!posts || !posts.length) return { avg: 0, engRate: '0.0', sparkline: [] };
+    const avg = Math.round(posts.reduce((s, p) => s + (p[metric] || 0), 0) / posts.length);
+    const sparkline = posts.slice(0, 7).reverse().map(p => p[metric] || 0);
+    return { avg, sparkline };
+  }
+
+  function loadCachedSocial() {
     // TikTok
     const ttRaw = localStorage.getItem('ctrl_tiktok_data');
     if (ttRaw) {
@@ -1279,9 +1396,10 @@
         const d = JSON.parse(ttRaw);
         document.getElementById('tt-followers').textContent = fmtNum(d.followers);
         document.getElementById('tt-posts').textContent = fmtNum(d.posts);
-        document.getElementById('tt-views').textContent = fmtNum(d.avgViews);
+        const stats = calcStats(d.posts_data, 'views');
+        document.getElementById('tt-views').textContent = fmtNum(stats.avg || d.avgViews);
         document.getElementById('tt-er').textContent = d.engRate ? d.engRate+'%' : '—';
-        if (d.sparkline) drawSparkline('tt-sparkline', d.sparkline, '#00f2ea');
+        drawSparkline('tt-sparkline', stats.sparkline.length ? stats.sparkline : (d.sparkline || []), '#00f2ea');
       } catch(e) {}
     } else {
       drawSparkline('tt-sparkline', [8200,12400,9800,15600,11200,19800,14300], '#00f2ea');
@@ -1294,9 +1412,10 @@
         const d = JSON.parse(igRaw);
         document.getElementById('ig-followers').textContent = fmtNum(d.followers);
         document.getElementById('ig-posts').textContent = fmtNum(d.posts);
-        document.getElementById('ig-likes').textContent = fmtNum(d.avgLikes);
+        const stats = calcStats(d.posts_data, 'likes');
+        document.getElementById('ig-likes').textContent = fmtNum(stats.avg || d.avgLikes);
         document.getElementById('ig-er').textContent = d.engRate ? d.engRate+'%' : '—';
-        if (d.sparkline) drawSparkline('ig-sparkline', d.sparkline, '#e6683c');
+        drawSparkline('ig-sparkline', stats.sparkline.length ? stats.sparkline : (d.sparkline || []), '#e6683c');
       } catch(e) {}
     } else {
       drawSparkline('ig-sparkline', [420,680,510,820,760,940,1100], '#e6683c');
@@ -1309,16 +1428,38 @@
         const d = JSON.parse(ytRaw);
         document.getElementById('yt-subs').textContent = fmtNum(d.subscribers);
         document.getElementById('yt-videos').textContent = fmtNum(d.videos);
-        document.getElementById('yt-views').textContent = fmtNum(d.avgViews);
+        const stats = calcStats(d.posts_data, 'views');
+        document.getElementById('yt-views').textContent = fmtNum(stats.avg || d.avgViews);
         document.getElementById('yt-watchtime').textContent = d.watchTime || '—';
-        if (d.sparkline) drawSparkline('yt-sparkline', d.sparkline, '#ff4444');
+        drawSparkline('yt-sparkline', stats.sparkline.length ? stats.sparkline : (d.sparkline || []), '#ff4444');
       } catch(e) {}
     } else {
       drawSparkline('yt-sparkline', [1200,3400,2800,5600,4200,7800,6100], '#ff4444');
     }
   }
 
-  loadCachedData();
+  // Load starred ideas into pipeline
+  function loadStarredIdeas() {
+    const starred = JSON.parse(localStorage.getItem('ctrl_starred_topics') || '[]');
+    const col = document.getElementById('ideas-col-body');
+    const count = document.getElementById('ideas-count');
+    if (!col) return;
+    count.textContent = starred.length;
+    if (!starred.length) {
+      col.innerHTML = '<div style="font-family:var(--font-data);font-size:9px;color:var(--text-muted);padding:10px 12px;line-height:1.6;">Geen favorieten.<br>Ga naar Research en geef een ★ aan onderwerpen.</div>';
+      return;
+    }
+    const platformTag = { TikTok:'tag-tiktok', Instagram:'tag-ig', YouTube:'tag-yt' };
+    col.innerHTML = starred.map(t => `
+      <div class="kanban-card">
+        <div class="kanban-card-title">${t.title}</div>
+        <div class="kanban-card-meta"><span class="tag ${platformTag[t.platform]||'tag-tiktok'}">${t.platform}</span></div>
+      </div>
+    `).join('');
+  }
+
+  loadStarredIdeas();
+  loadCachedSocial();
 
   // Try loading from proxy server data files
   async function tryLoadFromProxy() {
@@ -1340,7 +1481,7 @@
         const d = await ytRes.value.json();
         localStorage.setItem('ctrl_youtube_data', JSON.stringify(d));
       }
-      loadCachedData();
+      loadCachedSocial();
     } catch(e) {
       // Proxy not running — use localStorage cache (demo data shown)
     }
@@ -1351,6 +1492,7 @@
     const btn = document.getElementById('refreshBtn');
     btn.disabled = true;
     btn.textContent = '↻ Refreshing...';
+    btn.classList.add('loading');
 
     // Show loading states on cards
     ['tt-followers','tt-posts','tt-views','tt-er',
@@ -1386,7 +1528,7 @@
       document.getElementById('lastRefreshLabel').textContent =
         'Refreshed ' + new Date(now).toLocaleTimeString('nl-NL', { hour:'2-digit', minute:'2-digit' });
 
-      loadCachedData();
+      loadCachedSocial();
     } catch(e) {
       document.getElementById('lastRefreshLabel').textContent =
         '⚠ Proxy offline — run: node proxy.js';
@@ -1400,6 +1542,7 @@
       if (el) el.style.opacity = '1';
     });
 
+    btn.classList.remove('loading');
     btn.disabled = false;
     btn.textContent = '↻ Refresh Live Data';
   }

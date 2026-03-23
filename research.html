@@ -14,7 +14,7 @@
     --cyan: #00e5ff; --cyan-dim: rgba(0,229,255,0.1); --cyan-glow: rgba(0,229,255,0.3);
     --green: #00ff9d; --green-dim: rgba(0,255,157,0.1);
     --yellow: #ffd600; --yellow-dim: rgba(255,214,0,0.1);
-    --red: #ff3d5a; --text-primary: #e8f4ff; --text-secondary: #7a9bb5; --text-muted: #3a5570;
+    --red: #ff3d5a; --text-primary: #e8f4ff; --text-secondary: #b0cfe8; --text-muted: #6b90ad;
     --border: rgba(0,229,255,0.12); --border-accent: rgba(213,80,18,0.3);
     --nav-width: 62px; --font-head: 'Orbitron',monospace; --font-data: 'JetBrains Mono',monospace; --font-body: 'Outfit',sans-serif;
   }
@@ -92,6 +92,9 @@
   .idea-del{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:0;line-height:1;}
   .idea-del:hover{color:var(--red);}
 
+  .star-btn{background:none;border:none;cursor:pointer;font-size:18px;color:var(--text-muted);transition:all 0.15s;padding:2px 6px;border-radius:4px;}
+  .star-btn:hover{color:var(--yellow);}
+  .star-btn.starred{color:var(--yellow);text-shadow:0 0 8px rgba(255,214,0,0.5);}
   @keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
 </style>
 </head>
@@ -141,47 +144,21 @@
       <div class="section-line"></div>
     </div>
 
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+      <button id="fetchTopicsBtn" onclick="fetchTopics()" style="font-family:var(--font-data);font-size:9px;letter-spacing:0.1em;padding:6px 14px;border-radius:5px;border:1px solid var(--cyan);background:var(--cyan-dim);color:var(--cyan);cursor:pointer;">↻ Haal nieuwe onderwerpen op</button>
+      <span id="topicsStatus" style="font-family:var(--font-data);font-size:9px;color:var(--text-muted);"></span>
+    </div>
+
     <table class="trend-table">
       <thead>
         <tr>
           <th>Topic</th>
           <th>Platform</th>
-          <th>Potential</th>
-          <th>Action</th>
+          <th>Potentie</th>
+          <th style="width:80px;text-align:center;">Favoriet</th>
         </tr>
       </thead>
-      <tbody>
-        <tr>
-          <td><div class="topic-name">AI tools voor ondernemers 2026</div><div class="topic-hook">Hook: "Deze 5 tools wist je nog niet..."</div></td>
-          <td><span class="platform-tag pt-tiktok">TikTok</span></td>
-          <td><div class="rating"><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span></div></td>
-          <td><button class="script-btn" onclick="saveToIdeas('AI tools voor ondernemers 2026')">→ Script</button></td>
-        </tr>
-        <tr>
-          <td><div class="topic-name">Hoe je viraal gaat zonder groot account</div><div class="topic-hook">Hook: "Nobody tells you this about the algorithm..."</div></td>
-          <td><span class="platform-tag pt-ig">IG</span></td>
-          <td><div class="rating"><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star empty">★</span></div></td>
-          <td><button class="script-btn" onclick="saveToIdeas('Hoe je viraal gaat zonder groot account')">→ Script</button></td>
-        </tr>
-        <tr>
-          <td><div class="topic-name">Content maken in 1 uur per week</div><div class="topic-hook">Hook: "Ik maak een week content in 60 minuten..."</div></td>
-          <td><span class="platform-tag pt-yt">YouTube</span></td>
-          <td><div class="rating"><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star empty">★</span></div></td>
-          <td><button class="script-btn" onclick="saveToIdeas('Content maken in 1 uur per week')">→ Script</button></td>
-        </tr>
-        <tr>
-          <td><div class="topic-name">Waarom jouw concurrenten je inhalen</div><div class="topic-hook">Hook: "Ze gebruiken dit en jij niet..."</div></td>
-          <td><span class="platform-tag pt-tiktok">TikTok</span></td>
-          <td><div class="rating"><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star empty">★</span><span class="star empty">★</span></div></td>
-          <td><button class="script-btn" onclick="saveToIdeas('Waarom jouw concurrenten je inhalen')">→ Script</button></td>
-        </tr>
-        <tr>
-          <td><div class="topic-name">Van 0 naar 1000 volgers in 30 dagen</div><div class="topic-hook">Hook: "Ik deed dit experiment en..."</div></td>
-          <td><span class="platform-tag pt-ig">IG</span></td>
-          <td><div class="rating"><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span></div></td>
-          <td><button class="script-btn" onclick="saveToIdeas('Van 0 naar 1000 volgers in 30 dagen')">→ Script</button></td>
-        </tr>
-      </tbody>
+      <tbody id="topicsBody"></tbody>
     </table>
 
     <div class="section-header">
@@ -273,6 +250,87 @@
 </div>
 
 <script>
+  // ── Topics data (default set, can be replaced by proxy) ──
+  const DEFAULT_TOPICS = [
+    { id:1, title:'AI tools voor ondernemers 2026', hook:'Hook: "Deze 5 tools wist je nog niet..."', platform:'TikTok', ptClass:'pt-tiktok', score:5 },
+    { id:2, title:'Hoe je viraal gaat zonder groot account', hook:'Hook: "Nobody tells you this about the algorithm..."', platform:'Instagram', ptClass:'pt-ig', score:4 },
+    { id:3, title:'Content maken in 1 uur per week', hook:'Hook: "Ik maak een week content in 60 minuten..."', platform:'YouTube', ptClass:'pt-yt', score:4 },
+    { id:4, title:'Waarom jouw concurrenten je inhalen', hook:'Hook: "Ze gebruiken dit en jij niet..."', platform:'TikTok', ptClass:'pt-tiktok', score:3 },
+    { id:5, title:'Van 0 naar 1000 volgers in 30 dagen', hook:'Hook: "Ik deed dit experiment en..."', platform:'Instagram', ptClass:'pt-ig', score:5 },
+    { id:6, title:'De #1 fout die content creators maken', hook:'Hook: "Ik maakte deze fout 2 jaar lang..."', platform:'TikTok', ptClass:'pt-tiktok', score:4 },
+    { id:7, title:'Hoe je met 1 video een week content maakt', hook:'Hook: "One video, 7 platforms, zero effort..."', platform:'YouTube', ptClass:'pt-yt', score:5 },
+    { id:8, title:'Wat niemand je vertelt over het algoritme', hook:'Hook: "Het algoritme straft dit gedrag..."', platform:'Instagram', ptClass:'pt-ig', score:4 },
+    { id:9, title:'Hoe ik mijn eerste 10K volgde in 6 maanden', hook:'Hook: "Ik deed precies dit elke dag..."', platform:'TikTok', ptClass:'pt-tiktok', score:5 },
+    { id:10, title:'3 hooks die altijd werken in 2026', hook:'Hook: "Stop met deze hook — gebruik dit..."', platform:'Instagram', ptClass:'pt-ig', score:3 },
+    { id:11, title:'Waarom short-form video king is', hook:'Hook: "Long-form is dead. Here\'s why..."', platform:'YouTube', ptClass:'pt-yt', score:4 },
+    { id:12, title:'AI schrijft jouw content in 5 minuten', hook:'Hook: "Ik test dit elke week en dit werkt..."', platform:'TikTok', ptClass:'pt-tiktok', score:5 },
+  ];
+
+  let topics = JSON.parse(localStorage.getItem('ctrl_all_topics') || 'null') || DEFAULT_TOPICS;
+
+  function getStarred() {
+    return JSON.parse(localStorage.getItem('ctrl_starred_topics') || '[]');
+  }
+
+  function isStarred(id) {
+    return getStarred().some(t => t.id === id);
+  }
+
+  function toggleStar(id) {
+    const starred = getStarred();
+    const topic = topics.find(t => t.id === id);
+    if (!topic) return;
+    const idx = starred.findIndex(t => t.id === id);
+    if (idx >= 0) {
+      starred.splice(idx, 1);
+    } else {
+      starred.push({ id: topic.id, title: topic.title, hook: topic.hook, platform: topic.platform, ptClass: topic.ptClass });
+    }
+    localStorage.setItem('ctrl_starred_topics', JSON.stringify(starred));
+    renderTopics();
+  }
+
+  function renderTopics() {
+    const body = document.getElementById('topicsBody');
+    body.innerHTML = topics.map(t => {
+      const starred = isStarred(t.id);
+      const stars = '★'.repeat(t.score) + '☆'.repeat(5 - t.score);
+      return `<tr>
+        <td><div class="topic-name">${t.title}</div><div class="topic-hook">${t.hook}</div></td>
+        <td><span class="platform-tag ${t.ptClass}">${t.platform}</span></td>
+        <td><span style="color:var(--yellow);letter-spacing:2px;font-size:11px;">${stars}</span></td>
+        <td style="text-align:center;"><button class="star-btn ${starred?'starred':''}" onclick="toggleStar(${t.id})" title="${starred?'Verwijder uit favorieten':'Voeg toe aan ideas'}">${starred?'★':'☆'}</button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  async function fetchTopics() {
+    const btn = document.getElementById('fetchTopicsBtn');
+    const status = document.getElementById('topicsStatus');
+    btn.disabled = true;
+    status.textContent = 'Ophalen...';
+    try {
+      const res = await fetch('http://localhost:3001/topics');
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.length) {
+          topics = data;
+          localStorage.setItem('ctrl_all_topics', JSON.stringify(topics));
+          status.textContent = `${topics.length} onderwerpen geladen`;
+        } else {
+          status.textContent = 'Geen nieuwe onderwerpen';
+        }
+      } else {
+        status.textContent = 'Proxy offline — lokale topics getoond';
+      }
+    } catch(e) {
+      status.textContent = 'Proxy offline — lokale topics getoond';
+    }
+    btn.disabled = false;
+    renderTopics();
+  }
+
+  // ── Idea capture (quick notes) ──
   function copyHook(btn, text) {
     navigator.clipboard.writeText(text).then(() => {
       btn.textContent = 'Copied!';
@@ -285,14 +343,6 @@
     return JSON.parse(localStorage.getItem('ctrl_research_ideas') || '[]');
   }
 
-  function saveIdeas(ideas) {
-    localStorage.setItem('ctrl_research_ideas', JSON.stringify(ideas));
-    // also push to pipeline ideas key
-    const pipelineIdeas = JSON.parse(localStorage.getItem('ctrl_pipeline_ideas') || '[]');
-    localStorage.setItem('ctrl_pipeline_ideas', JSON.stringify([...pipelineIdeas, ...ideas]));
-    renderIdeas();
-  }
-
   function saveIdea() {
     const input = document.getElementById('ideaInput');
     const text = input.value.trim();
@@ -301,17 +351,6 @@
     ideas.unshift({ id: Date.now(), text });
     localStorage.setItem('ctrl_research_ideas', JSON.stringify(ideas));
     input.value = '';
-    renderIdeas();
-  }
-
-  function saveToIdeas(topic) {
-    const ideas = getIdeas();
-    ideas.unshift({ id: Date.now(), text: topic });
-    localStorage.setItem('ctrl_research_ideas', JSON.stringify(ideas));
-    // push to pipeline
-    const pipeIdeas = JSON.parse(localStorage.getItem('ctrl_pipeline_ideas') || '[]');
-    pipeIdeas.push(topic);
-    localStorage.setItem('ctrl_pipeline_ideas', JSON.stringify(pipeIdeas));
     renderIdeas();
   }
 
@@ -333,6 +372,7 @@
     `).join('');
   }
 
+  renderTopics();
   renderIdeas();
 </script>
 </body>
