@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CTRL — Pipeline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=JetBrains+Mono:wght@300;400;500;700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-void: #020408; --bg-deep: #050c10; --bg-surface: #0a1520;
+    --bg-elevated: #0f1e2e; --bg-card: #0d1a27;
+    --accent: #d55012; --accent-dim: rgba(213,80,18,0.15); --accent-glow: rgba(213,80,18,0.4);
+    --cyan: #00e5ff; --cyan-dim: rgba(0,229,255,0.1); --cyan-glow: rgba(0,229,255,0.3);
+    --green: #00ff9d; --green-dim: rgba(0,255,157,0.1);
+    --yellow: #ffd600; --yellow-dim: rgba(255,214,0,0.1);
+    --red: #ff3d5a; --text-primary: #e8f4ff; --text-secondary: #7a9bb5; --text-muted: #3a5570;
+    --border: rgba(0,229,255,0.12); --border-accent: rgba(213,80,18,0.3);
+    --nav-width: 62px; --font-head: 'Orbitron',monospace; --font-data: 'JetBrains Mono',monospace; --font-body: 'Outfit',sans-serif;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg-void);color:var(--text-primary);font-family:var(--font-body);font-size:13px;min-height:100vh;}
+  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,229,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,0.025) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+
+  .nav-sidebar{position:fixed;left:0;top:0;bottom:0;width:var(--nav-width);background:rgba(5,12,16,0.95);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:16px 0;z-index:100;backdrop-filter:blur(10px);}
+  .nav-logo{width:36px;height:36px;background:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:var(--font-head);font-size:11px;font-weight:900;color:#fff;margin-bottom:24px;box-shadow:0 0 16px var(--accent-glow);}
+  .nav-links{display:flex;flex-direction:column;gap:4px;width:100%;padding:0 8px;flex:1;}
+  .nav-link{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 4px;border-radius:8px;text-decoration:none;color:var(--text-muted);transition:all 0.2s;}
+  .nav-link:hover{color:var(--cyan);background:var(--cyan-dim);}
+  .nav-link.active{color:var(--accent);background:var(--accent-dim);box-shadow:0 0 12px var(--accent-glow);}
+  .nav-link svg{width:18px;height:18px;}
+  .nav-label{font-family:var(--font-data);font-size:7px;letter-spacing:0.05em;text-transform:uppercase;}
+
+  .page-wrap{margin-left:var(--nav-width);padding:20px;position:relative;z-index:1;}
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+  .topbar h1{font-family:var(--font-head);font-size:18px;font-weight:700;letter-spacing:0.1em;}
+  .topbar .subtitle{font-family:var(--font-data);font-size:10px;color:var(--text-muted);letter-spacing:0.08em;margin-top:2px;}
+
+  .add-card-btn{font-family:var(--font-data);font-size:10px;letter-spacing:0.1em;padding:8px 16px;border-radius:6px;border:1px solid var(--accent);background:var(--accent-dim);color:var(--accent);cursor:pointer;transition:all 0.15s;}
+  .add-card-btn:hover{background:var(--accent);color:#fff;}
+
+  .kanban-board{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;}
+  .kanban-col{background:var(--bg-surface);border:1px solid var(--border);border-radius:10px;padding:12px;min-height:calc(100vh - 140px);}
+  .kanban-col.drag-over{border-color:var(--cyan);background:rgba(0,229,255,0.04);}
+  .col-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+  .col-title{font-family:var(--font-data);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);}
+  .col-count{font-family:var(--font-data);font-size:9px;color:var(--text-muted);background:var(--bg-card);min-width:20px;height:20px;border-radius:4px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);}
+
+  .k-card{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px;cursor:grab;transition:all 0.15s;user-select:none;}
+  .k-card:active{cursor:grabbing;}
+  .k-card.dragging{opacity:0.4;border-color:var(--cyan);}
+  .k-card:hover{border-color:var(--cyan);box-shadow:0 0 10px var(--cyan-glow);}
+  .k-card-title{font-size:12px;color:var(--text-primary);line-height:1.4;margin-bottom:6px;}
+  .k-card-meta{display:flex;gap:4px;flex-wrap:wrap;align-items:center;}
+  .tag{font-family:var(--font-data);font-size:8px;padding:2px 5px;border-radius:3px;letter-spacing:0.05em;}
+  .tag-tiktok{background:rgba(0,242,234,0.1);color:#00f2ea;}
+  .tag-ig{background:rgba(220,39,67,0.1);color:#e6683c;}
+  .tag-yt{background:rgba(255,0,0,0.1);color:#ff4444;}
+  .k-script-btn{font-family:var(--font-data);font-size:8px;padding:2px 7px;border-radius:3px;border:1px solid var(--accent);background:var(--accent-dim);color:var(--accent);cursor:pointer;margin-left:auto;}
+  .k-script-btn:hover{background:var(--accent);color:#fff;}
+  .k-schedule-label{font-family:var(--font-data);font-size:9px;color:var(--yellow);margin-top:4px;}
+
+  /* Modal */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;align-items:center;justify-content:center;}
+  .modal-overlay.active{display:flex;}
+  .modal{background:var(--bg-elevated);border:1px solid var(--border-accent);border-radius:12px;padding:24px;width:400px;max-width:90vw;}
+  .modal h3{font-family:var(--font-head);font-size:14px;color:var(--accent);margin-bottom:16px;letter-spacing:0.08em;}
+  .modal label{display:block;font-family:var(--font-data);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:5px;}
+  .modal input{width:100%;background:var(--bg-surface);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text-primary);font-family:var(--font-body);font-size:12px;outline:none;margin-bottom:14px;}
+  .modal input:focus{border-color:var(--cyan);}
+  .modal-actions{display:flex;gap:8px;justify-content:flex-end;}
+  .btn-cancel{font-family:var(--font-data);font-size:10px;padding:7px 14px;border-radius:5px;border:1px solid var(--border);background:none;color:var(--text-muted);cursor:pointer;}
+  .btn-confirm{font-family:var(--font-data);font-size:10px;padding:7px 14px;border-radius:5px;border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer;}
+
+  /* Script modal */
+  .script-modal{background:var(--bg-elevated);border:1px solid var(--border-accent);border-radius:12px;padding:24px;width:600px;max-width:90vw;}
+  .script-textarea{width:100%;background:var(--bg-surface);border:1px solid var(--border);border-radius:6px;padding:10px;color:var(--text-primary);font-family:var(--font-data);font-size:11px;resize:vertical;min-height:200px;outline:none;line-height:1.6;}
+  .script-textarea:focus{border-color:var(--cyan);}
+  .generating{color:var(--cyan);font-family:var(--font-data);font-size:11px;animation:blink 1s infinite;}
+  @keyframes blink{0%,100%{opacity:1;}50%{opacity:0.3;}}
+</style>
+</head>
+<body>
+
+<nav class="nav-sidebar">
+  <div class="nav-logo">SM</div>
+  <div class="nav-links">
+    <a href="ai-dashboard.html" class="nav-link" title="Overview">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <span class="nav-label">Overview</span>
+    </a>
+    <a href="research.html" class="nav-link" title="Research">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+      <span class="nav-label">Research</span>
+    </a>
+    <a href="pipeline.html" class="nav-link active" title="Pipeline">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+      <span class="nav-label">Pipeline</span>
+    </a>
+    <a href="performance.html" class="nav-link" title="Performance">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span class="nav-label">Perf</span>
+    </a>
+    <a href="agents.html" class="nav-link" title="Agents">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>
+      <span class="nav-label">Agents</span>
+    </a>
+    <a href="clients.html" class="nav-link" title="Clients">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span class="nav-label">Clients</span>
+    </a>
+  </div>
+</nav>
+
+<!-- Schedule Modal -->
+<div class="modal-overlay" id="scheduleModal">
+  <div class="modal">
+    <h3>SCHEDULE POST</h3>
+    <label>Datum & Tijd</label>
+    <input type="datetime-local" id="scheduleTime">
+    <label>Platform</label>
+    <input type="text" id="schedulePlatform" placeholder="TikTok, Instagram, YouTube...">
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeScheduleModal()">Annuleer</button>
+      <button class="btn-confirm" onclick="confirmSchedule()">Inplannen →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Script Modal -->
+<div class="modal-overlay" id="scriptModal">
+  <div class="script-modal">
+    <h3 id="scriptModalTitle">SCRIPT GENERATOR</h3>
+    <div id="scriptContent">
+      <div class="generating" id="scriptGenerating">GENERATING SCRIPT...</div>
+      <textarea class="script-textarea" id="scriptTextarea" style="display:none;"></textarea>
+    </div>
+    <div class="modal-actions" style="margin-top:12px;">
+      <button class="btn-cancel" onclick="closeScriptModal()">Sluiten</button>
+      <button class="btn-confirm" id="saveScriptBtn" style="display:none;" onclick="saveScript()">Opslaan & Verplaats →</button>
+    </div>
+  </div>
+</div>
+
+<div class="page-wrap">
+  <div class="topbar">
+    <div>
+      <h1>CTRL <span style="color:var(--accent)">—</span> Pipeline</h1>
+      <div class="subtitle">CONTENT PIPELINE — DRAG & DROP KANBAN</div>
+    </div>
+    <button class="add-card-btn" onclick="addNewIdea()">+ Nieuw Idee</button>
+  </div>
+
+  <div class="kanban-board" id="kanbanBoard">
+    <div class="kanban-col" data-col="ideas" ondragover="onDragOver(event)" ondrop="onDrop(event,'ideas')" ondragleave="onDragLeave(event)">
+      <div class="col-header">
+        <span class="col-title">Ideas</span>
+        <span class="col-count" id="count-ideas">0</span>
+      </div>
+      <div class="cards-container" id="col-ideas"></div>
+    </div>
+    <div class="kanban-col" data-col="scripting" ondragover="onDragOver(event)" ondrop="onDrop(event,'scripting')" ondragleave="onDragLeave(event)">
+      <div class="col-header">
+        <span class="col-title">Scripting</span>
+        <span class="col-count" id="count-scripting">0</span>
+      </div>
+      <div class="cards-container" id="col-scripting"></div>
+    </div>
+    <div class="kanban-col" data-col="editing" ondragover="onDragOver(event)" ondrop="onDrop(event,'editing')" ondragleave="onDragLeave(event)">
+      <div class="col-header">
+        <span class="col-title">Editing</span>
+        <span class="col-count" id="count-editing">0</span>
+      </div>
+      <div class="cards-container" id="col-editing"></div>
+    </div>
+    <div class="kanban-col" data-col="scheduled" ondragover="onDragOver(event)" ondrop="onDrop(event,'scheduled')" ondragleave="onDragLeave(event)">
+      <div class="col-header">
+        <span class="col-title">Scheduled</span>
+        <span class="col-count" id="count-scheduled">0</span>
+      </div>
+      <div class="cards-container" id="col-scheduled"></div>
+    </div>
+    <div class="kanban-col" data-col="published" ondragover="onDragOver(event)" ondrop="onDrop(event,'published')" ondragleave="onDragLeave(event)">
+      <div class="col-header">
+        <span class="col-title">Published</span>
+        <span class="col-count" id="count-published">0</span>
+      </div>
+      <div class="cards-container" id="col-published"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const BOARD_KEY = 'ctrl_pipeline_board';
+  const IDEAS_KEY = 'ctrl_pipeline_ideas';
+
+  let board = {
+    ideas: [],
+    scripting: [],
+    editing: [],
+    scheduled: [],
+    published: []
+  };
+
+  let dragCardId = null;
+  let pendingScheduleCardId = null;
+  let pendingScriptCardId = null;
+  let currentScript = '';
+
+  function defaultBoard() {
+    return {
+      ideas: [
+        { id: 1, title: '10 dingen die je nooit leert op school over geld', platform: 'tiktok', script: null, scheduleTime: null },
+        { id: 2, title: 'Hoe AI jouw workflow 10x sneller maakt', platform: 'ig', script: null, scheduleTime: null },
+        { id: 3, title: 'De tool die mijn business redde', platform: 'yt', script: null, scheduleTime: null },
+      ],
+      scripting: [
+        { id: 4, title: 'AI vervangt jouw concurrent... maar niet jou', platform: 'tiktok', script: null, scheduleTime: null },
+        { id: 5, title: '5 AI tools elke ondernemer moet kennen', platform: 'yt', script: null, scheduleTime: null },
+      ],
+      editing: [
+        { id: 6, title: 'Hoe ik van 0 naar 10K volgers ging in 90 dagen', platform: 'ig', script: null, scheduleTime: null },
+      ],
+      scheduled: [
+        { id: 7, title: 'Stop met hard werken — begin slim te werken', platform: 'tiktok', script: null, scheduleTime: '2026-03-23T12:00' },
+        { id: 8, title: 'Mijn eerlijke review van ChatGPT 5', platform: 'yt', script: null, scheduleTime: '2026-03-23T20:00' },
+      ],
+      published: [
+        { id: 9, title: 'Waarom 95% faalt op social media', platform: 'tiktok', script: null, scheduleTime: null },
+        { id: 10, title: '3 hooks die altijd werken', platform: 'ig', script: null, scheduleTime: null },
+      ]
+    };
+  }
+
+  function loadBoard() {
+    const raw = localStorage.getItem(BOARD_KEY);
+    if (raw) {
+      try { board = JSON.parse(raw); }
+      catch(e) { board = defaultBoard(); }
+    } else {
+      board = defaultBoard();
+    }
+
+    // Inject ideas from research page
+    const pipeIdeas = JSON.parse(localStorage.getItem(IDEAS_KEY) || '[]');
+    if (pipeIdeas.length > 0) {
+      pipeIdeas.forEach(idea => {
+        const text = typeof idea === 'string' ? idea : idea.text || idea;
+        if (text) {
+          board.ideas.unshift({ id: Date.now() + Math.random(), title: text, platform: 'tiktok', script: null, scheduleTime: null });
+        }
+      });
+      localStorage.removeItem(IDEAS_KEY);
+      saveBoard();
+    }
+  }
+
+  function saveBoard() {
+    localStorage.setItem(BOARD_KEY, JSON.stringify(board));
+    renderBoard();
+  }
+
+  function platformTag(p) {
+    if (p === 'tiktok') return '<span class="tag tag-tiktok">TikTok</span>';
+    if (p === 'ig') return '<span class="tag tag-ig">IG</span>';
+    if (p === 'yt') return '<span class="tag tag-yt">YT</span>';
+    return '';
+  }
+
+  function renderBoard() {
+    const cols = ['ideas','scripting','editing','scheduled','published'];
+    cols.forEach(col => {
+      const container = document.getElementById(`col-${col}`);
+      const count = document.getElementById(`count-${col}`);
+      const cards = board[col] || [];
+      count.textContent = cards.length;
+      container.innerHTML = cards.map(card => `
+        <div class="k-card" draggable="true" data-id="${card.id}" data-col="${col}"
+             ondragstart="onDragStart(event,${card.id})"
+             ondragend="onDragEnd(event)">
+          <div class="k-card-title">${card.title}</div>
+          <div class="k-card-meta">
+            ${platformTag(card.platform)}
+            ${card.scheduleTime ? `<div class="k-schedule-label">📅 ${formatSchedule(card.scheduleTime)}</div>` : ''}
+            ${col !== 'published' ? `<button class="k-script-btn" onclick="openScriptModal(event,${card.id},'${col}')">✍ Script</button>` : ''}
+          </div>
+          ${card.script ? '<div style="font-family:var(--font-data);font-size:9px;color:var(--green);margin-top:4px;">✓ Script saved</div>' : ''}
+        </div>
+      `).join('');
+    });
+  }
+
+  function formatSchedule(dt) {
+    if (!dt) return '';
+    try {
+      return new Date(dt).toLocaleString('nl-NL', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+    } catch(e) { return dt; }
+  }
+
+  function onDragStart(e, cardId) {
+    dragCardId = cardId;
+    e.dataTransfer.effectAllowed = 'move';
+    setTimeout(() => { e.target.classList.add('dragging'); }, 0);
+  }
+
+  function onDragEnd(e) {
+    e.target.classList.remove('dragging');
+    document.querySelectorAll('.kanban-col').forEach(c => c.classList.remove('drag-over'));
+  }
+
+  function onDragOver(e) {
+    e.preventDefault();
+    e.currentTarget.classList.add('drag-over');
+  }
+
+  function onDragLeave(e) {
+    e.currentTarget.classList.remove('drag-over');
+  }
+
+  function onDrop(e, targetCol) {
+    e.preventDefault();
+    e.currentTarget.classList.remove('drag-over');
+    if (!dragCardId) return;
+
+    // Find source col
+    let sourceCol = null;
+    let card = null;
+    for (const col of Object.keys(board)) {
+      const idx = board[col].findIndex(c => c.id == dragCardId);
+      if (idx > -1) {
+        sourceCol = col;
+        card = board[col].splice(idx, 1)[0];
+        break;
+      }
+    }
+
+    if (!card) return;
+
+    // If dropping to Scheduled, open schedule modal
+    if (targetCol === 'scheduled' && !card.scheduleTime) {
+      board[sourceCol].push(card); // put back temporarily
+      saveBoard();
+      pendingScheduleCardId = card.id;
+      pendingScheduleSourceCol = sourceCol;
+      openScheduleModal();
+      return;
+    }
+
+    board[targetCol].push(card);
+    saveBoard();
+  }
+
+  let pendingScheduleSourceCol = 'ideas';
+
+  function openScheduleModal() {
+    document.getElementById('scheduleModal').classList.add('active');
+  }
+
+  function closeScheduleModal() {
+    document.getElementById('scheduleModal').classList.remove('active');
+    pendingScheduleCardId = null;
+  }
+
+  function confirmSchedule() {
+    const time = document.getElementById('scheduleTime').value;
+    if (!time || !pendingScheduleCardId) { closeScheduleModal(); return; }
+
+    // Find card in source col and move to scheduled
+    for (const col of Object.keys(board)) {
+      const idx = board[col].findIndex(c => c.id == pendingScheduleCardId);
+      if (idx > -1) {
+        const card = board[col].splice(idx, 1)[0];
+        card.scheduleTime = time;
+        board.scheduled.push(card);
+        break;
+      }
+    }
+
+    closeScheduleModal();
+    saveBoard();
+  }
+
+  function openScriptModal(e, cardId, col) {
+    e.stopPropagation();
+    pendingScriptCardId = cardId;
+
+    // Check if script already exists
+    let found = null;
+    for (const c of Object.keys(board)) {
+      found = board[c].find(card => card.id == cardId);
+      if (found) break;
+    }
+
+    const title = found ? found.title : '';
+    document.getElementById('scriptModalTitle').textContent = 'SCRIPT: ' + title.substring(0, 40).toUpperCase();
+    document.getElementById('scriptModal').classList.add('active');
+    document.getElementById('scriptGenerating').style.display = 'block';
+    document.getElementById('scriptTextarea').style.display = 'none';
+    document.getElementById('saveScriptBtn').style.display = 'none';
+
+    if (found && found.script) {
+      showScript(found.script);
+      return;
+    }
+
+    // Try proxy server first, fallback to placeholder
+    generateScript(title);
+  }
+
+  async function generateScript(title) {
+    try {
+      const res = await fetch('http://localhost:3001/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system: 'Je bent een expert content creator voor social media. Schrijf in het Nederlands.',
+          prompt: `Schrijf een volledig video script voor: "${title}". Formaat: Hook (0-3s), Problem/Setup (3-15s), Content (15-50s), CTA (50-60s). Maak het energiek en engaging.`
+        })
+      });
+      const data = await res.json();
+      showScript(data.script);
+    } catch(e) {
+      // Fallback placeholder
+      const placeholder = `HOOK (0-3s):\n"${title}"\n\nPROBLEEM/SETUP (3-15s):\nDe meeste mensen weten dit niet, maar...\n\nCONTENT (15-50s):\n[Hier jouw 3 key points]\n1. ...\n2. ...\n3. ...\n\nCTA (50-60s):\nVolg me voor meer tips. Link in bio.\n\n---\n[Genereer een volledig script door proxy.js te starten: node proxy.js]`;
+      showScript(placeholder);
+    }
+  }
+
+  function showScript(script) {
+    currentScript = script;
+    document.getElementById('scriptGenerating').style.display = 'none';
+    const ta = document.getElementById('scriptTextarea');
+    ta.value = script;
+    ta.style.display = 'block';
+    document.getElementById('saveScriptBtn').style.display = 'block';
+  }
+
+  function saveScript() {
+    const script = document.getElementById('scriptTextarea').value;
+    for (const col of Object.keys(board)) {
+      const card = board[col].find(c => c.id == pendingScriptCardId);
+      if (card) {
+        card.script = script;
+        // Move to scripting if in ideas
+        if (col === 'ideas') {
+          board[col] = board[col].filter(c => c.id != pendingScriptCardId);
+          board.scripting.push(card);
+        }
+        break;
+      }
+    }
+    saveBoard();
+    closeScriptModal();
+  }
+
+  function closeScriptModal() {
+    document.getElementById('scriptModal').classList.remove('active');
+    pendingScriptCardId = null;
+  }
+
+  function addNewIdea() {
+    const title = prompt('Nieuw idee:');
+    if (!title) return;
+    board.ideas.unshift({ id: Date.now(), title, platform: 'tiktok', script: null, scheduleTime: null });
+    saveBoard();
+  }
+
+  loadBoard();
+  renderBoard();
+</script>
+</body>
+</html>

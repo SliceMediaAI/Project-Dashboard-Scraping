@@ -1,0 +1,6 @@
+# Environment variables — NOOIT uploaden naar GitHub
+.env
+
+# OS bestanden
+.DS_Store
+Thumbs.db

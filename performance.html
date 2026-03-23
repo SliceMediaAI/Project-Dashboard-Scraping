@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CTRL — Performance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=JetBrains+Mono:wght@300;400;500;700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-void: #020408; --bg-deep: #050c10; --bg-surface: #0a1520;
+    --bg-elevated: #0f1e2e; --bg-card: #0d1a27;
+    --accent: #d55012; --accent-dim: rgba(213,80,18,0.15); --accent-glow: rgba(213,80,18,0.4);
+    --cyan: #00e5ff; --cyan-dim: rgba(0,229,255,0.1); --cyan-glow: rgba(0,229,255,0.3);
+    --green: #00ff9d; --green-dim: rgba(0,255,157,0.1);
+    --yellow: #ffd600; --red: #ff3d5a;
+    --text-primary: #e8f4ff; --text-secondary: #7a9bb5; --text-muted: #3a5570;
+    --border: rgba(0,229,255,0.12); --border-accent: rgba(213,80,18,0.3);
+    --nav-width: 62px; --font-head: 'Orbitron',monospace; --font-data: 'JetBrains Mono',monospace; --font-body: 'Outfit',sans-serif;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg-void);color:var(--text-primary);font-family:var(--font-body);font-size:13px;min-height:100vh;}
+  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,229,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,0.025) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+
+  .nav-sidebar{position:fixed;left:0;top:0;bottom:0;width:var(--nav-width);background:rgba(5,12,16,0.95);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:16px 0;z-index:100;backdrop-filter:blur(10px);}
+  .nav-logo{width:36px;height:36px;background:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:var(--font-head);font-size:11px;font-weight:900;color:#fff;margin-bottom:24px;box-shadow:0 0 16px var(--accent-glow);}
+  .nav-links{display:flex;flex-direction:column;gap:4px;width:100%;padding:0 8px;flex:1;}
+  .nav-link{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 4px;border-radius:8px;text-decoration:none;color:var(--text-muted);transition:all 0.2s;}
+  .nav-link:hover{color:var(--cyan);background:var(--cyan-dim);}
+  .nav-link.active{color:var(--accent);background:var(--accent-dim);box-shadow:0 0 12px var(--accent-glow);}
+  .nav-link svg{width:18px;height:18px;}
+  .nav-label{font-family:var(--font-data);font-size:7px;letter-spacing:0.05em;text-transform:uppercase;}
+
+  .page-wrap{margin-left:var(--nav-width);padding:20px;position:relative;z-index:1;}
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+  .topbar h1{font-family:var(--font-head);font-size:18px;font-weight:700;letter-spacing:0.1em;}
+  .topbar .subtitle{font-family:var(--font-data);font-size:10px;color:var(--text-muted);letter-spacing:0.08em;margin-top:2px;}
+
+  .refresh-btn{font-family:var(--font-data);font-size:10px;letter-spacing:0.1em;padding:8px 16px;border-radius:6px;border:1px solid var(--cyan);background:var(--cyan-dim);color:var(--cyan);cursor:pointer;transition:all 0.15s;}
+  .refresh-btn:hover{background:var(--cyan);color:#000;}
+  .refresh-btn:disabled{opacity:0.5;cursor:not-allowed;}
+  .last-refresh{font-family:var(--font-data);font-size:9px;color:var(--text-muted);margin-left:10px;}
+
+  .section-header{display:flex;align-items:center;gap:8px;margin-bottom:12px;margin-top:24px;}
+  .section-header:first-of-type{margin-top:0;}
+  .section-title{font-family:var(--font-data);font-size:10px;font-weight:500;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);}
+  .section-line{flex:1;height:1px;background:var(--border);}
+
+  .platform-header{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--bg-surface);border:1px solid var(--border);border-radius:8px 8px 0 0;border-bottom:none;}
+  .platform-dot{width:8px;height:8px;border-radius:50%;}
+  .platform-name{font-family:var(--font-head);font-size:12px;letter-spacing:0.1em;}
+  .live-badge{font-family:var(--font-data);font-size:8px;padding:2px 6px;border-radius:3px;border:1px solid var(--green);color:var(--green);}
+  .platform-name.tiktok-color{color:#00f2ea;}
+  .platform-name.ig-color{color:#e6683c;}
+  .platform-name.yt-color{color:#ff4444;}
+  .dot-tiktok{background:#00f2ea;}
+  .dot-ig{background:#e6683c;}
+  .dot-yt{background:#ff4444;}
+
+  .perf-table{width:100%;border-collapse:collapse;margin-bottom:20px;}
+  .perf-table th{font-family:var(--font-data);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);padding:8px 12px;text-align:left;background:var(--bg-card);border:1px solid var(--border);}
+  .perf-table td{padding:10px 12px;border:1px solid rgba(0,229,255,0.06);vertical-align:middle;}
+  .perf-table tbody tr:hover td{background:var(--bg-surface);}
+  .post-title{font-weight:500;color:var(--text-primary);font-size:12px;margin-bottom:2px;}
+  .post-date{font-family:var(--font-data);font-size:9px;color:var(--text-muted);}
+  .metric-val{font-family:var(--font-head);font-size:14px;font-weight:700;}
+  .metric-val.cyan{color:var(--cyan);}
+  .metric-val.accent{color:var(--accent);}
+  .metric-val.green{color:var(--green);}
+  .er-bar{width:60px;height:4px;background:var(--bg-surface);border-radius:2px;overflow:hidden;margin-top:2px;}
+  .er-fill{height:100%;border-radius:2px;background:var(--accent);}
+  .repurpose-btn{font-family:var(--font-data);font-size:8px;padding:3px 8px;border-radius:3px;border:1px solid var(--accent);background:var(--accent-dim);color:var(--accent);cursor:pointer;white-space:nowrap;}
+  .repurpose-btn:hover{background:var(--accent);color:#fff;}
+
+  .sparkline{width:80px;height:24px;}
+  .loading-pulse{animation:pulse 1.5s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+</style>
+</head>
+<body>
+
+<nav class="nav-sidebar">
+  <div class="nav-logo">SM</div>
+  <div class="nav-links">
+    <a href="ai-dashboard.html" class="nav-link" title="Overview">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <span class="nav-label">Overview</span>
+    </a>
+    <a href="research.html" class="nav-link" title="Research">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+      <span class="nav-label">Research</span>
+    </a>
+    <a href="pipeline.html" class="nav-link" title="Pipeline">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+      <span class="nav-label">Pipeline</span>
+    </a>
+    <a href="performance.html" class="nav-link active" title="Performance">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span class="nav-label">Perf</span>
+    </a>
+    <a href="agents.html" class="nav-link" title="Agents">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>
+      <span class="nav-label">Agents</span>
+    </a>
+    <a href="clients.html" class="nav-link" title="Clients">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span class="nav-label">Clients</span>
+    </a>
+  </div>
+</nav>
+
+<div class="page-wrap">
+  <div class="topbar">
+    <div>
+      <h1>CTRL <span style="color:var(--accent)">—</span> Performance</h1>
+      <div class="subtitle">PLATFORM ANALYTICS — REAL-TIME DATA</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button class="refresh-btn" id="refreshBtn" onclick="refreshAllData()">↻ Refresh Data</button>
+      <span class="last-refresh" id="lastRefresh"></span>
+    </div>
+  </div>
+
+  <!-- TikTok -->
+  <div class="section-header">
+    <span class="section-title">TikTok Performance</span>
+    <div class="section-line"></div>
+  </div>
+  <div class="platform-header">
+    <div class="platform-dot dot-tiktok"></div>
+    <span class="platform-name tiktok-color">TikTok</span>
+    <span class="live-badge">● LIVE</span>
+    <span style="margin-left:auto;font-family:var(--font-data);font-size:10px;color:var(--text-secondary);">
+      Followers: <strong id="tt-total-followers" style="color:var(--cyan)">—</strong> &nbsp;|&nbsp; Posts: <strong id="tt-total-posts" style="color:var(--text-primary)">—</strong>
+    </span>
+  </div>
+  <table class="perf-table">
+    <thead>
+      <tr>
+        <th>Post</th>
+        <th>Views</th>
+        <th>Likes</th>
+        <th>Comments</th>
+        <th>Eng. Rate</th>
+        <th>Sparkline</th>
+        <th>Actie</th>
+      </tr>
+    </thead>
+    <tbody id="tt-table-body">
+      <tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px;font-family:var(--font-data);font-size:10px;">Klik "↻ Refresh Data" om live data te laden</td></tr>
+    </tbody>
+  </table>
+
+  <!-- Instagram -->
+  <div class="section-header">
+    <span class="section-title">Instagram Performance</span>
+    <div class="section-line"></div>
+  </div>
+  <div class="platform-header">
+    <div class="platform-dot dot-ig"></div>
+    <span class="platform-name ig-color">Instagram</span>
+    <span class="live-badge">● LIVE</span>
+    <span style="margin-left:auto;font-family:var(--font-data);font-size:10px;color:var(--text-secondary);">
+      Followers: <strong id="ig-total-followers" style="color:var(--cyan)">—</strong> &nbsp;|&nbsp; Posts: <strong id="ig-total-posts" style="color:var(--text-primary)">—</strong>
+    </span>
+  </div>
+  <table class="perf-table">
+    <thead>
+      <tr>
+        <th>Post</th>
+        <th>Likes</th>
+        <th>Comments</th>
+        <th>Reach</th>
+        <th>Eng. Rate</th>
+        <th>Sparkline</th>
+        <th>Actie</th>
+      </tr>
+    </thead>
+    <tbody id="ig-table-body">
+      <tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px;font-family:var(--font-data);font-size:10px;">Klik "↻ Refresh Data" om live data te laden</td></tr>
+    </tbody>
+  </table>
+
+  <!-- YouTube -->
+  <div class="section-header">
+    <span class="section-title">YouTube Performance</span>
+    <div class="section-line"></div>
+  </div>
+  <div class="platform-header">
+    <div class="platform-dot dot-yt"></div>
+    <span class="platform-name yt-color">YouTube</span>
+    <span class="live-badge">● LIVE</span>
+    <span style="margin-left:auto;font-family:var(--font-data);font-size:10px;color:var(--text-secondary);">
+      Subscribers: <strong id="yt-total-subs" style="color:var(--cyan)">—</strong> &nbsp;|&nbsp; Videos: <strong id="yt-total-videos" style="color:var(--text-primary)">—</strong>
+    </span>
+  </div>
+  <table class="perf-table">
+    <thead>
+      <tr>
+        <th>Video</th>
+        <th>Views</th>
+        <th>Likes</th>
+        <th>Comments</th>
+        <th>CTR</th>
+        <th>Sparkline</th>
+        <th>Actie</th>
+      </tr>
+    </thead>
+    <tbody id="yt-table-body">
+      <tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px;font-family:var(--font-data);font-size:10px;">Klik "↻ Refresh Data" om live data te laden</td></tr>
+    </tbody>
+  </table>
+
+  <div style="height:40px;"></div>
+</div>
+
+<script>
+  function fmtNum(n) {
+    if (!n && n !== 0) return '—';
+    if (n >= 1000000) return (n/1000000).toFixed(1)+'M';
+    if (n >= 1000) return (n/1000).toFixed(1)+'K';
+    return n.toString();
+  }
+
+  function drawSparklineSVG(data, color) {
+    if (!data || data.length < 2) return '<svg width="80" height="24"></svg>';
+    const w = 80, h = 24, pad = 2;
+    const min = Math.min(...data), max = Math.max(...data), range = max - min || 1;
+    const pts = data.map((v, i) => {
+      const x = pad + (i / (data.length - 1)) * (w - pad * 2);
+      const y = h - pad - ((v - min) / range) * (h - pad * 2);
+      return `${x},${y}`;
+    }).join(' ');
+    return `<svg width="80" height="24" viewBox="0 0 80 24"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
+  }
+
+  function repurpose(title) {
+    const ideas = JSON.parse(localStorage.getItem('ctrl_pipeline_ideas') || '[]');
+    ideas.push(`Repurpose: ${title}`);
+    localStorage.setItem('ctrl_pipeline_ideas', JSON.stringify(ideas));
+    alert('Toegevoegd aan Pipeline Ideas! Open Pipeline om te zien.');
+  }
+
+  function loadCachedData() {
+    const ts = localStorage.getItem('ctrl_last_refresh');
+    if (ts) {
+      document.getElementById('lastRefresh').textContent = 'Last: ' + new Date(parseInt(ts)).toLocaleTimeString('nl-NL');
+    }
+
+    const ttRaw = localStorage.getItem('ctrl_tiktok_data');
+    if (ttRaw) {
+      try { renderTikTok(JSON.parse(ttRaw)); } catch(e) {}
+    }
+
+    const igRaw = localStorage.getItem('ctrl_instagram_data');
+    if (igRaw) {
+      try { renderInstagram(JSON.parse(igRaw)); } catch(e) {}
+    }
+
+    const ytRaw = localStorage.getItem('ctrl_youtube_data');
+    if (ytRaw) {
+      try { renderYouTube(JSON.parse(ytRaw)); } catch(e) {}
+    }
+  }
+
+  function renderTikTok(data) {
+    if (data.followers) document.getElementById('tt-total-followers').textContent = fmtNum(data.followers);
+    if (data.posts) document.getElementById('tt-total-posts').textContent = fmtNum(data.posts);
+    if (!data.posts_data || !data.posts_data.length) return;
+    const tbody = document.getElementById('tt-table-body');
+    tbody.innerHTML = data.posts_data.map(p => {
+      const er = p.followers > 0 ? ((p.likes + p.comments) / p.followers * 100).toFixed(1) : '—';
+      return `<tr>
+        <td><div class="post-title">${p.title || p.text || 'Post'}</div><div class="post-date">${p.date || ''}</div></td>
+        <td><span class="metric-val cyan">${fmtNum(p.views)}</span></td>
+        <td><span class="metric-val accent">${fmtNum(p.likes)}</span></td>
+        <td><span class="metric-val">${fmtNum(p.comments)}</span></td>
+        <td><span class="metric-val green">${er}%</span><div class="er-bar"><div class="er-fill" style="width:${Math.min(er,20)*5}%"></div></div></td>
+        <td>${drawSparklineSVG([p.views], '#00f2ea')}</td>
+        <td><button class="repurpose-btn" onclick="repurpose('${(p.title||p.text||'').replace(/'/g,"\\'")}')">→ Repurpose</button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  function renderInstagram(data) {
+    if (data.followers) document.getElementById('ig-total-followers').textContent = fmtNum(data.followers);
+    if (data.posts) document.getElementById('ig-total-posts').textContent = fmtNum(data.posts);
+    if (!data.posts_data || !data.posts_data.length) return;
+    const tbody = document.getElementById('ig-table-body');
+    tbody.innerHTML = data.posts_data.map(p => {
+      const er = data.followers > 0 ? ((p.likes + p.comments) / data.followers * 100).toFixed(1) : '—';
+      return `<tr>
+        <td><div class="post-title">${p.title || p.caption || 'Post'}</div><div class="post-date">${p.date || ''}</div></td>
+        <td><span class="metric-val accent">${fmtNum(p.likes)}</span></td>
+        <td><span class="metric-val">${fmtNum(p.comments)}</span></td>
+        <td><span class="metric-val cyan">${fmtNum(p.reach || p.impressions || '—')}</span></td>
+        <td><span class="metric-val green">${er}%</span><div class="er-bar"><div class="er-fill" style="width:${Math.min(er,20)*5}%"></div></div></td>
+        <td>${drawSparklineSVG([p.likes], '#e6683c')}</td>
+        <td><button class="repurpose-btn" onclick="repurpose('${(p.title||p.caption||'').replace(/'/g,"\\'")}')">→ Repurpose</button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  function renderYouTube(data) {
+    if (data.subscribers) document.getElementById('yt-total-subs').textContent = fmtNum(data.subscribers);
+    if (data.videos) document.getElementById('yt-total-videos').textContent = fmtNum(data.videos);
+    if (!data.posts_data || !data.posts_data.length) {
+      document.getElementById('yt-table-body').innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px;font-family:var(--font-data);font-size:10px;">No content yet</td></tr>';
+      return;
+    }
+    const tbody = document.getElementById('yt-table-body');
+    tbody.innerHTML = data.posts_data.map(p => {
+      return `<tr>
+        <td><div class="post-title">${p.title || 'Video'}</div><div class="post-date">${p.date || ''}</div></td>
+        <td><span class="metric-val cyan">${fmtNum(p.views)}</span></td>
+        <td><span class="metric-val accent">${fmtNum(p.likes)}</span></td>
+        <td><span class="metric-val">${fmtNum(p.comments)}</span></td>
+        <td><span class="metric-val green">${p.ctr || '—'}%</span></td>
+        <td>${drawSparklineSVG([p.views], '#ff4444')}</td>
+        <td><button class="repurpose-btn" onclick="repurpose('${(p.title||'').replace(/'/g,"\\'")}')">→ Repurpose</button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  async function refreshAllData() {
+    const btn = document.getElementById('refreshBtn');
+    btn.disabled = true;
+    btn.textContent = '↻ Refreshing...';
+
+    ['tt-table-body','ig-table-body','yt-table-body'].forEach(id => {
+      document.getElementById(id).innerHTML =
+        '<tr><td colspan="7" style="text-align:center;color:var(--cyan);padding:20px;font-family:var(--font-data);font-size:10px;animation:pulse 1s infinite;">LOADING LIVE DATA...</td></tr>';
+    });
+
+    try {
+      const [ttRes, igRes, ytRes] = await Promise.allSettled([
+        fetch('http://localhost:3001/refresh/tiktok', { method: 'POST' }),
+        fetch('http://localhost:3001/refresh/instagram', { method: 'POST' }),
+        fetch('http://localhost:3001/refresh/youtube', { method: 'POST' }),
+      ]);
+
+      if (ttRes.status === 'fulfilled' && ttRes.value.ok) {
+        const d = await ttRes.value.json();
+        if (!d.error) { localStorage.setItem('ctrl_tiktok_data', JSON.stringify(d)); renderTikTok(d); }
+      }
+      if (igRes.status === 'fulfilled' && igRes.value.ok) {
+        const d = await igRes.value.json();
+        if (!d.error) { localStorage.setItem('ctrl_instagram_data', JSON.stringify(d)); renderInstagram(d); }
+      }
+      if (ytRes.status === 'fulfilled' && ytRes.value.ok) {
+        const d = await ytRes.value.json();
+        if (!d.error) { localStorage.setItem('ctrl_youtube_data', JSON.stringify(d)); renderYouTube(d); }
+      }
+
+      const now = Date.now();
+      localStorage.setItem('ctrl_last_refresh', now.toString());
+      document.getElementById('lastRefresh').textContent = 'Last: ' + new Date(now).toLocaleTimeString('nl-NL');
+    } catch(e) {
+      document.getElementById('lastRefresh').textContent = '⚠ Start proxy: node proxy.js';
+      loadCachedData();
+    }
+
+    btn.disabled = false;
+    btn.textContent = '↻ Refresh Data';
+  }
+
+  loadCachedData();
+</script>
+</body>
+</html>

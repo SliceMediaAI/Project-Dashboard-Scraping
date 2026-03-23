@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CTRL — Agents</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=JetBrains+Mono:wght@300;400;500;700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-void: #020408; --bg-deep: #050c10; --bg-surface: #0a1520;
+    --bg-elevated: #0f1e2e; --bg-card: #0d1a27;
+    --accent: #d55012; --accent-dim: rgba(213,80,18,0.15); --accent-glow: rgba(213,80,18,0.4);
+    --cyan: #00e5ff; --cyan-dim: rgba(0,229,255,0.1); --cyan-glow: rgba(0,229,255,0.3);
+    --green: #00ff9d; --green-dim: rgba(0,255,157,0.1);
+    --yellow: #ffd600; --yellow-dim: rgba(255,214,0,0.1);
+    --red: #ff3d5a; --text-primary: #e8f4ff; --text-secondary: #7a9bb5; --text-muted: #3a5570;
+    --border: rgba(0,229,255,0.12); --border-accent: rgba(213,80,18,0.3);
+    --nav-width: 62px; --font-head: 'Orbitron',monospace; --font-data: 'JetBrains Mono',monospace; --font-body: 'Outfit',sans-serif;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg-void);color:var(--text-primary);font-family:var(--font-body);font-size:13px;min-height:100vh;}
+  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,229,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,0.025) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+
+  .nav-sidebar{position:fixed;left:0;top:0;bottom:0;width:var(--nav-width);background:rgba(5,12,16,0.95);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:16px 0;z-index:100;backdrop-filter:blur(10px);}
+  .nav-logo{width:36px;height:36px;background:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:var(--font-head);font-size:11px;font-weight:900;color:#fff;margin-bottom:24px;box-shadow:0 0 16px var(--accent-glow);}
+  .nav-links{display:flex;flex-direction:column;gap:4px;width:100%;padding:0 8px;flex:1;}
+  .nav-link{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 4px;border-radius:8px;text-decoration:none;color:var(--text-muted);transition:all 0.2s;}
+  .nav-link:hover{color:var(--cyan);background:var(--cyan-dim);}
+  .nav-link.active{color:var(--accent);background:var(--accent-dim);box-shadow:0 0 12px var(--accent-glow);}
+  .nav-link svg{width:18px;height:18px;}
+  .nav-label{font-family:var(--font-data);font-size:7px;letter-spacing:0.05em;text-transform:uppercase;}
+
+  .page-wrap{margin-left:var(--nav-width);padding:20px;position:relative;z-index:1;}
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+  .topbar h1{font-family:var(--font-head);font-size:18px;font-weight:700;letter-spacing:0.1em;}
+  .topbar .subtitle{font-family:var(--font-data);font-size:10px;color:var(--text-muted);letter-spacing:0.08em;margin-top:2px;}
+
+  .section-header{display:flex;align-items:center;gap:8px;margin-bottom:12px;margin-top:24px;}
+  .section-header:first-of-type{margin-top:0;}
+  .section-title{font-family:var(--font-data);font-size:10px;font-weight:500;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);}
+  .section-line{flex:1;height:1px;background:var(--border);}
+
+  .agents-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:24px;}
+  .agent-card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:16px;transition:all 0.2s;}
+  .agent-card:hover{border-color:var(--accent);box-shadow:0 0 16px var(--accent-glow);}
+  .agent-avatar{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:10px;}
+  .agent-name{font-family:var(--font-data);font-size:12px;font-weight:700;color:var(--text-primary);margin-bottom:2px;}
+  .agent-role{font-size:11px;color:var(--text-muted);margin-bottom:10px;}
+  .agent-status{font-family:var(--font-data);font-size:9px;letter-spacing:0.06em;padding:3px 8px;border-radius:3px;display:inline-block;margin-bottom:10px;}
+  .status-active{background:var(--green-dim);color:var(--green);border:1px solid var(--green);}
+  .status-idle{background:var(--yellow-dim);color:var(--yellow);border:1px solid var(--yellow);}
+  .status-busy{background:var(--accent-dim);color:var(--accent);border:1px solid var(--accent);}
+  .agent-progress{width:100%;height:4px;background:var(--bg-surface);border-radius:2px;overflow:hidden;margin-bottom:8px;}
+  .agent-progress-fill{height:100%;border-radius:2px;transition:width 0.5s ease;}
+  .agent-task{font-family:var(--font-data);font-size:9px;color:var(--text-muted);line-height:1.4;}
+  .agent-run-btn{width:100%;margin-top:8px;font-family:var(--font-data);font-size:9px;letter-spacing:0.08em;padding:5px;border-radius:4px;border:1px solid var(--border);background:var(--bg-surface);color:var(--text-secondary);cursor:pointer;transition:all 0.15s;}
+  .agent-run-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-dim);}
+
+  .task-table{width:100%;border-collapse:collapse;}
+  .task-table th{font-family:var(--font-data);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);padding:8px 12px;text-align:left;background:var(--bg-surface);border:1px solid var(--border);}
+  .task-table td{padding:10px 12px;border:1px solid rgba(0,229,255,0.06);vertical-align:middle;}
+  .task-table tr:hover td{background:var(--bg-surface);}
+  .task-name{font-weight:500;color:var(--text-primary);font-size:12px;margin-bottom:2px;}
+  .task-agent{font-family:var(--font-data);font-size:9px;color:var(--text-muted);}
+  .priority-high{color:var(--red);font-family:var(--font-data);font-size:9px;}
+  .priority-med{color:var(--yellow);font-family:var(--font-data);font-size:9px;}
+  .priority-low{color:var(--green);font-family:var(--font-data);font-size:9px;}
+
+  .activity-log{background:var(--bg-surface);border:1px solid var(--border);border-radius:10px;padding:16px;max-height:300px;overflow-y:auto;}
+  .log-item{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid rgba(0,229,255,0.06);}
+  .log-time{font-family:var(--font-data);font-size:9px;color:var(--text-muted);white-space:nowrap;padding-top:1px;}
+  .log-text{font-size:11px;color:var(--text-secondary);line-height:1.4;}
+  .log-text strong{color:var(--text-primary);}
+  .log-badge{font-family:var(--font-data);font-size:8px;padding:1px 5px;border-radius:3px;}
+
+  @keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+</style>
+</head>
+<body>
+
+<nav class="nav-sidebar">
+  <div class="nav-logo">SM</div>
+  <div class="nav-links">
+    <a href="ai-dashboard.html" class="nav-link" title="Overview">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <span class="nav-label">Overview</span>
+    </a>
+    <a href="research.html" class="nav-link" title="Research">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+      <span class="nav-label">Research</span>
+    </a>
+    <a href="pipeline.html" class="nav-link" title="Pipeline">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+      <span class="nav-label">Pipeline</span>
+    </a>
+    <a href="performance.html" class="nav-link" title="Performance">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span class="nav-label">Perf</span>
+    </a>
+    <a href="agents.html" class="nav-link active" title="Agents">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>
+      <span class="nav-label">Agents</span>
+    </a>
+    <a href="clients.html" class="nav-link" title="Clients">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span class="nav-label">Clients</span>
+    </a>
+  </div>
+</nav>
+
+<div class="page-wrap">
+  <div class="topbar">
+    <div>
+      <h1>CTRL <span style="color:var(--accent)">—</span> Agents</h1>
+      <div class="subtitle">AI AGENT TASK QUEUE & MONITORING</div>
+    </div>
+  </div>
+
+  <div class="section-header">
+    <span class="section-title">Agent Status</span>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="agents-grid">
+    <div class="agent-card">
+      <div class="agent-avatar" style="background:rgba(0,229,255,0.1);border:1px solid rgba(0,229,255,0.2);">🔍</div>
+      <div class="agent-name">Scout</div>
+      <div class="agent-role">Trend Research</div>
+      <span class="agent-status status-active">ACTIVE</span>
+      <div class="agent-progress"><div class="agent-progress-fill" style="width:72%;background:var(--cyan);"></div></div>
+      <div class="agent-task">Scanning trending topics in jouw niche...</div>
+      <button class="agent-run-btn" onclick="runAgent('Scout','Trend Scan')">▶ Run Trend Scan</button>
+    </div>
+    <div class="agent-card">
+      <div class="agent-avatar" style="background:rgba(213,80,18,0.1);border:1px solid rgba(213,80,18,0.2);">✍️</div>
+      <div class="agent-name">Writer</div>
+      <div class="agent-role">Script Generator</div>
+      <span class="agent-status status-busy">WRITING</span>
+      <div class="agent-progress"><div class="agent-progress-fill" style="width:45%;background:var(--accent);"></div></div>
+      <div class="agent-task">Script: "5 AI tools voor elke ondernemer"</div>
+      <button class="agent-run-btn" onclick="runAgent('Writer','Generate Script')">▶ New Script</button>
+    </div>
+    <div class="agent-card">
+      <div class="agent-avatar" style="background:rgba(0,255,157,0.1);border:1px solid rgba(0,255,157,0.2);">📊</div>
+      <div class="agent-name">Analyst</div>
+      <div class="agent-role">Data & Insights</div>
+      <span class="agent-status status-active">ACTIVE</span>
+      <div class="agent-progress"><div class="agent-progress-fill" style="width:88%;background:var(--green);"></div></div>
+      <div class="agent-task">Analyseer performance afgelopen 7 dagen</div>
+      <button class="agent-run-btn" onclick="runAgent('Analyst','Performance Report')">▶ Gen Report</button>
+    </div>
+    <div class="agent-card">
+      <div class="agent-avatar" style="background:rgba(255,214,0,0.1);border:1px solid rgba(255,214,0,0.2);">📅</div>
+      <div class="agent-name">Scheduler</div>
+      <div class="agent-role">Content Planning</div>
+      <span class="agent-status status-idle">IDLE</span>
+      <div class="agent-progress"><div class="agent-progress-fill" style="width:20%;background:var(--yellow);"></div></div>
+      <div class="agent-task">Wachtend op nieuwe content...</div>
+      <button class="agent-run-btn" onclick="runAgent('Scheduler','Plan Week')">▶ Plan Week</button>
+    </div>
+    <div class="agent-card">
+      <div class="agent-avatar" style="background:rgba(213,80,18,0.1);border:1px solid rgba(213,80,18,0.2);">🎯</div>
+      <div class="agent-name">Optimizer</div>
+      <div class="agent-role">Hook & CTA Testing</div>
+      <span class="agent-status status-active">ACTIVE</span>
+      <div class="agent-progress"><div class="agent-progress-fill" style="width:60%;background:var(--accent);"></div></div>
+      <div class="agent-task">A/B test 3 hooks voor volgende post</div>
+      <button class="agent-run-btn" onclick="runAgent('Optimizer','Optimize Hooks')">▶ Run A/B Test</button>
+    </div>
+  </div>
+
+  <div class="section-header">
+    <span class="section-title">Task Queue</span>
+    <div class="section-line"></div>
+  </div>
+
+  <table class="task-table">
+    <thead>
+      <tr>
+        <th>Taak</th>
+        <th>Agent</th>
+        <th>Status</th>
+        <th>Prioriteit</th>
+        <th>ETA</th>
+      </tr>
+    </thead>
+    <tbody id="taskTableBody">
+      <tr>
+        <td><div class="task-name">Trend scan — social media marketing niche</div><div class="task-agent">Assigned to Scout</div></td>
+        <td style="font-family:var(--font-data);font-size:10px;color:var(--cyan);">Scout</td>
+        <td><span class="agent-status status-active" style="font-size:9px;padding:2px 6px;">ACTIVE</span></td>
+        <td><span class="priority-high">HIGH</span></td>
+        <td style="font-family:var(--font-data);font-size:10px;color:var(--text-muted);">~5 min</td>
+      </tr>
+      <tr>
+        <td><div class="task-name">Script genereren: "5 AI tools voor elke ondernemer"</div><div class="task-agent">Assigned to Writer</div></td>
+        <td style="font-family:var(--font-data);font-size:10px;color:var(--accent);">Writer</td>
+        <td><span class="agent-status status-busy" style="font-size:9px;padding:2px 6px;">WRITING</span></td>
+        <td><span class="priority-high">HIGH</span></td>
+        <td style="font-family:var(--font-data);font-size:10px;color:var(--text-muted);">~3 min</td>
+      </tr>
+      <tr>
+        <td><div class="task-name">Weekly performance rapport genereren</div><div class="task-agent">Assigned to Analyst</div></td>
+        <td style="font-family:var(--font-data);font-size:10px;color:var(--green);">Analyst</td>
+        <td><span class="agent-status status-active" style="font-size:9px;padding:2px 6px;">ACTIVE</span></td>
+        <td><span class="priority-med">MED</span></td>
+        <td style="font-family:var(--font-data);font-size:10px;color:var(--text-muted);">~2 min</td>
+      </tr>
+      <tr>
+        <td><div class="task-name">Content kalender plannen voor volgende week</div><div class="task-agent">Assigned to Scheduler</div></td>
+        <td style="font-family:var(--font-data);font-size:10px;color:var(--yellow);">Scheduler</td>
+        <td><span class="agent-status status-idle" style="font-size:9px;padding:2px 6px;">QUEUED</span></td>
+        <td><span class="priority-med">MED</span></td>
+        <td style="font-family:var(--font-data);font-size:10px;color:var(--text-muted);">Pending</td>
+      </tr>
+      <tr>
+        <td><div class="task-name">A/B test hooks voor TikTok posts</div><div class="task-agent">Assigned to Optimizer</div></td>
+        <td style="font-family:var(--font-data);font-size:10px;color:var(--accent);">Optimizer</td>
+        <td><span class="agent-status status-active" style="font-size:9px;padding:2px 6px;">ACTIVE</span></td>
+        <td><span class="priority-low">LOW</span></td>
+        <td style="font-family:var(--font-data);font-size:10px;color:var(--text-muted);">~8 min</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="section-header">
+    <span class="section-title">Activity Log</span>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="activity-log" id="activityLog">
+    <div class="log-item">
+      <div class="log-time">14:32</div>
+      <div class="log-text"><strong>Scout</strong> completed trend scan — 8 new topics gevonden</div>
+    </div>
+    <div class="log-item">
+      <div class="log-time">14:18</div>
+      <div class="log-text"><strong>Writer</strong> started script: "AI vervangt jouw concurrent..."</div>
+    </div>
+    <div class="log-item">
+      <div class="log-time">13:55</div>
+      <div class="log-text"><strong>Analyst</strong> generated performance rapport — +18% bereik</div>
+    </div>
+    <div class="log-item">
+      <div class="log-time">13:40</div>
+      <div class="log-text"><strong>Optimizer</strong> identified top hook: "Nobody tells you..." (3.2× avg)</div>
+    </div>
+    <div class="log-item">
+      <div class="log-time">12:00</div>
+      <div class="log-text"><strong>Scheduler</strong> published TikTok: "Stop met hard werken..."</div>
+    </div>
+  </div>
+
+  <div style="height:40px;"></div>
+</div>
+
+<script>
+  function runAgent(name, task) {
+    const log = document.getElementById('activityLog');
+    const time = new Date().toLocaleTimeString('nl-NL', { hour:'2-digit', minute:'2-digit' });
+    const item = document.createElement('div');
+    item.className = 'log-item';
+    item.style.animation = 'fadeUp 0.3s ease both';
+    item.innerHTML = `<div class="log-time">${time}</div><div class="log-text"><strong>${name}</strong> started: ${task}...</div>`;
+    log.insertBefore(item, log.firstChild);
+  }
+</script>
+</body>
+</html>

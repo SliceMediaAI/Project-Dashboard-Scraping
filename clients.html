@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CTRL — Clients</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=JetBrains+Mono:wght@300;400;500;700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-void: #020408; --bg-deep: #050c10; --bg-surface: #0a1520;
+    --bg-elevated: #0f1e2e; --bg-card: #0d1a27;
+    --accent: #d55012; --accent-dim: rgba(213,80,18,0.15); --accent-glow: rgba(213,80,18,0.4);
+    --cyan: #00e5ff; --cyan-dim: rgba(0,229,255,0.1); --cyan-glow: rgba(0,229,255,0.3);
+    --green: #00ff9d; --green-dim: rgba(0,255,157,0.1);
+    --yellow: #ffd600; --yellow-dim: rgba(255,214,0,0.1);
+    --red: #ff3d5a; --text-primary: #e8f4ff; --text-secondary: #7a9bb5; --text-muted: #3a5570;
+    --border: rgba(0,229,255,0.12); --border-accent: rgba(213,80,18,0.3);
+    --nav-width: 62px; --font-head: 'Orbitron',monospace; --font-data: 'JetBrains Mono',monospace; --font-body: 'Outfit',sans-serif;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg-void);color:var(--text-primary);font-family:var(--font-body);font-size:13px;min-height:100vh;}
+  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,229,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,0.025) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+
+  .nav-sidebar{position:fixed;left:0;top:0;bottom:0;width:var(--nav-width);background:rgba(5,12,16,0.95);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:16px 0;z-index:100;backdrop-filter:blur(10px);}
+  .nav-logo{width:36px;height:36px;background:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:var(--font-head);font-size:11px;font-weight:900;color:#fff;margin-bottom:24px;box-shadow:0 0 16px var(--accent-glow);}
+  .nav-links{display:flex;flex-direction:column;gap:4px;width:100%;padding:0 8px;flex:1;}
+  .nav-link{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 4px;border-radius:8px;text-decoration:none;color:var(--text-muted);transition:all 0.2s;}
+  .nav-link:hover{color:var(--cyan);background:var(--cyan-dim);}
+  .nav-link.active{color:var(--accent);background:var(--accent-dim);box-shadow:0 0 12px var(--accent-glow);}
+  .nav-link svg{width:18px;height:18px;}
+  .nav-label{font-family:var(--font-data);font-size:7px;letter-spacing:0.05em;text-transform:uppercase;}
+
+  .page-wrap{margin-left:var(--nav-width);padding:20px;position:relative;z-index:1;}
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+  .topbar h1{font-family:var(--font-head);font-size:18px;font-weight:700;letter-spacing:0.1em;}
+  .topbar .subtitle{font-family:var(--font-data);font-size:10px;color:var(--text-muted);letter-spacing:0.08em;margin-top:2px;}
+
+  .add-client-btn{font-family:var(--font-data);font-size:10px;letter-spacing:0.1em;padding:8px 16px;border-radius:6px;border:1px solid var(--accent);background:var(--accent-dim);color:var(--accent);cursor:pointer;transition:all 0.15s;}
+  .add-client-btn:hover{background:var(--accent);color:#fff;}
+
+  .clients-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;}
+
+  .client-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:18px;transition:all 0.2s;}
+  .client-card:hover{border-color:var(--cyan);box-shadow:0 0 16px var(--cyan-glow);}
+
+  .client-card-header{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+  .client-avatar{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:var(--font-head);font-size:14px;font-weight:700;flex-shrink:0;}
+  .client-info{}
+  .client-name{font-family:var(--font-data);font-size:13px;font-weight:700;color:var(--text-primary);}
+  .client-type{font-size:11px;color:var(--text-muted);margin-top:2px;}
+  .client-phase{margin-left:auto;font-family:var(--font-data);font-size:9px;padding:3px 8px;border-radius:3px;white-space:nowrap;}
+  .phase-onboarding{background:var(--yellow-dim);color:var(--yellow);border:1px solid var(--yellow);}
+  .phase-active{background:var(--green-dim);color:var(--green);border:1px solid var(--green);}
+  .phase-review{background:var(--accent-dim);color:var(--accent);border:1px solid var(--accent);}
+  .phase-done{background:var(--cyan-dim);color:var(--cyan);border:1px solid var(--cyan);}
+
+  .phase-progress{margin-bottom:14px;}
+  .phase-label{font-family:var(--font-data);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:5px;display:flex;justify-content:space-between;}
+  .progress-track{width:100%;height:5px;background:var(--bg-surface);border-radius:3px;overflow:hidden;}
+  .progress-fill{height:100%;border-radius:3px;transition:width 0.4s ease;}
+
+  .task-checklist{margin-bottom:12px;}
+  .checklist-title{font-family:var(--font-data);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:7px;}
+  .check-item{display:flex;align-items:center;gap:7px;padding:4px 0;cursor:pointer;}
+  .check-box{width:14px;height:14px;border-radius:3px;border:1px solid var(--text-muted);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s;}
+  .check-box.done{background:var(--green);border-color:var(--green);}
+  .check-box.done::after{content:'✓';color:#000;font-size:9px;font-weight:700;}
+  .check-text{font-size:11px;color:var(--text-secondary);}
+  .check-text.done-text{text-decoration:line-through;color:var(--text-muted);}
+
+  .next-action{background:var(--bg-surface);border:1px solid var(--border-accent);border-radius:6px;padding:10px 12px;}
+  .next-action-label{font-family:var(--font-data);font-size:8px;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);margin-bottom:4px;}
+  .next-action-text{font-size:11px;color:var(--text-secondary);line-height:1.4;}
+
+  @keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+</style>
+</head>
+<body>
+
+<nav class="nav-sidebar">
+  <div class="nav-logo">SM</div>
+  <div class="nav-links">
+    <a href="ai-dashboard.html" class="nav-link" title="Overview">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <span class="nav-label">Overview</span>
+    </a>
+    <a href="research.html" class="nav-link" title="Research">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+      <span class="nav-label">Research</span>
+    </a>
+    <a href="pipeline.html" class="nav-link" title="Pipeline">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+      <span class="nav-label">Pipeline</span>
+    </a>
+    <a href="performance.html" class="nav-link" title="Performance">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span class="nav-label">Perf</span>
+    </a>
+    <a href="agents.html" class="nav-link" title="Agents">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>
+      <span class="nav-label">Agents</span>
+    </a>
+    <a href="clients.html" class="nav-link active" title="Clients">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span class="nav-label">Clients</span>
+    </a>
+  </div>
+</nav>
+
+<div class="page-wrap">
+  <div class="topbar">
+    <div>
+      <h1>CTRL <span style="color:var(--accent)">—</span> Clients</h1>
+      <div class="subtitle">CLIENT TASK MANAGEMENT & PHASE TRACKING</div>
+    </div>
+    <button class="add-client-btn">+ Nieuwe Client</button>
+  </div>
+
+  <div class="clients-grid">
+
+    <!-- Client 1 -->
+    <div class="client-card">
+      <div class="client-card-header">
+        <div class="client-avatar" style="background:rgba(0,229,255,0.1);border:1px solid rgba(0,229,255,0.2);color:var(--cyan);">BC</div>
+        <div class="client-info">
+          <div class="client-name">Bedrijf Alpha</div>
+          <div class="client-type">E-commerce · Social Media</div>
+        </div>
+        <span class="client-phase phase-active">ACTIVE</span>
+      </div>
+      <div class="phase-progress">
+        <div class="phase-label"><span>Maand 2 / 3</span><span>67%</span></div>
+        <div class="progress-track"><div class="progress-fill" style="width:67%;background:var(--green);"></div></div>
+      </div>
+      <div class="task-checklist">
+        <div class="checklist-title">Deze Week</div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box done"></div>
+          <span class="check-text done-text">Content kalender goedkeuren</span>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box done"></div>
+          <span class="check-text done-text">3 TikToks plannen en inplannen</span>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <span class="check-text">Maandrapport maken en sturen</span>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <span class="check-text">Strategie call plannen</span>
+        </div>
+      </div>
+      <div class="next-action">
+        <div class="next-action-label">→ Next Action</div>
+        <div class="next-action-text">Maandrapport opstellen en versturen vóór vrijdag</div>
+      </div>
+    </div>
+
+    <!-- Client 2 -->
+    <div class="client-card">
+      <div class="client-card-header">
+        <div class="client-avatar" style="background:rgba(213,80,18,0.1);border:1px solid rgba(213,80,18,0.2);color:var(--accent);">TK</div>
+        <div class="client-info">
+          <div class="client-name">Bedrijf Beta</div>
+          <div class="client-type">Personal Brand · LinkedIn</div>
+        </div>
+        <span class="client-phase phase-onboarding">ONBOARDING</span>
+      </div>
+      <div class="phase-progress">
+        <div class="phase-label"><span>Week 2 / 4</span><span>40%</span></div>
+        <div class="progress-track"><div class="progress-fill" style="width:40%;background:var(--yellow);"></div></div>
+      </div>
+      <div class="task-checklist">
+        <div class="checklist-title">Onboarding Checklist</div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box done"></div>
+          <span class="check-text done-text">Intake gesprek</span>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box done"></div>
+          <span class="check-text done-text">Brand strategie document</span>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <span class="check-text">Content pillars bepalen</span>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <span class="check-text">Eerste content kalender</span>
+        </div>
+      </div>
+      <div class="next-action">
+        <div class="next-action-label">→ Next Action</div>
+        <div class="next-action-text">Content pillars call plannen — deze week</div>
+      </div>
+    </div>
+
+    <!-- Client 3 -->
+    <div class="client-card">
+      <div class="client-card-header">
+        <div class="client-avatar" style="background:rgba(0,255,157,0.1);border:1px solid rgba(0,255,157,0.2);color:var(--green);">RS</div>
+        <div class="client-info">
+          <div class="client-name">Bedrijf Gamma</div>
+          <div class="client-type">Restaurant · Instagram</div>
+        </div>
+        <span class="client-phase phase-review">REVIEW</span>
+      </div>
+      <div class="phase-progress">
+        <div class="phase-label"><span>Maand 3 / 3</span><span>90%</span></div>
+        <div class="progress-track"><div class="progress-fill" style="width:90%;background:var(--accent);"></div></div>
+      </div>
+      <div class="task-checklist">
+        <div class="checklist-title">Afsluiting Checklist</div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box done"></div>
+          <span class="check-text done-text">Final rapport gemaakt</span>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box done"></div>
+          <span class="check-text done-text">ROI berekend en gedocumenteerd</span>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box done"></div>
+          <span class="check-text done-text">Offerte verlengd contract verstuurd</span>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <span class="check-text">Review & testimonial vragen</span>
+        </div>
+      </div>
+      <div class="next-action">
+        <div class="next-action-label">→ Next Action</div>
+        <div class="next-action-text">Testimonial + Google review aanvragen via email</div>
+      </div>
+    </div>
+
+    <!-- Client 4 -->
+    <div class="client-card">
+      <div class="client-card-header">
+        <div class="client-avatar" style="background:rgba(255,214,0,0.1);border:1px solid rgba(255,214,0,0.2);color:var(--yellow);">MV</div>
+        <div class="client-info">
+          <div class="client-name">Bedrijf Delta</div>
+          <div class="client-type">Coach · TikTok + YouTube</div>
+        </div>
+        <span class="client-phase phase-done">RENEWED</span>
+      </div>
+      <div class="phase-progress">
+        <div class="phase-label"><span>Maand 1 / 6 (Verlenging)</span><span>15%</span></div>
+        <div class="progress-track"><div class="progress-fill" style="width:15%;background:var(--cyan);"></div></div>
+      </div>
+      <div class="task-checklist">
+        <div class="checklist-title">Verlenging Start</div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box done"></div>
+          <span class="check-text done-text">Nieuw contract getekend</span>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <span class="check-text">Q2 strategie call</span>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <span class="check-text">YouTube kanaal setup review</span>
+        </div>
+        <div class="check-item" onclick="toggleCheck(this)">
+          <div class="check-box"></div>
+          <span class="check-text">Content systeem updaten</span>
+        </div>
+      </div>
+      <div class="next-action">
+        <div class="next-action-label">→ Next Action</div>
+        <div class="next-action-text">Q2 strategie call plannen — volgende week</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="height:40px;"></div>
+</div>
+
+<script>
+  function toggleCheck(item) {
+    const box = item.querySelector('.check-box');
+    const text = item.querySelector('.check-text');
+    box.classList.toggle('done');
+    text.classList.toggle('done-text');
+  }
+</script>
+</body>
+</html>

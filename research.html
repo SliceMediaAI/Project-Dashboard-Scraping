@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CTRL — Research</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=JetBrains+Mono:wght@300;400;500;700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-void: #020408; --bg-deep: #050c10; --bg-surface: #0a1520;
+    --bg-elevated: #0f1e2e; --bg-card: #0d1a27;
+    --accent: #d55012; --accent-dim: rgba(213,80,18,0.15); --accent-glow: rgba(213,80,18,0.4);
+    --cyan: #00e5ff; --cyan-dim: rgba(0,229,255,0.1); --cyan-glow: rgba(0,229,255,0.3);
+    --green: #00ff9d; --green-dim: rgba(0,255,157,0.1);
+    --yellow: #ffd600; --yellow-dim: rgba(255,214,0,0.1);
+    --red: #ff3d5a; --text-primary: #e8f4ff; --text-secondary: #7a9bb5; --text-muted: #3a5570;
+    --border: rgba(0,229,255,0.12); --border-accent: rgba(213,80,18,0.3);
+    --nav-width: 62px; --font-head: 'Orbitron',monospace; --font-data: 'JetBrains Mono',monospace; --font-body: 'Outfit',sans-serif;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg-void);color:var(--text-primary);font-family:var(--font-body);font-size:13px;min-height:100vh;}
+  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,229,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,0.025) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+
+  .nav-sidebar{position:fixed;left:0;top:0;bottom:0;width:var(--nav-width);background:rgba(5,12,16,0.95);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:16px 0;z-index:100;backdrop-filter:blur(10px);}
+  .nav-logo{width:36px;height:36px;background:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:var(--font-head);font-size:11px;font-weight:900;color:#fff;margin-bottom:24px;box-shadow:0 0 16px var(--accent-glow);}
+  .nav-links{display:flex;flex-direction:column;gap:4px;width:100%;padding:0 8px;flex:1;}
+  .nav-link{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 4px;border-radius:8px;text-decoration:none;color:var(--text-muted);transition:all 0.2s;}
+  .nav-link:hover{color:var(--cyan);background:var(--cyan-dim);}
+  .nav-link.active{color:var(--accent);background:var(--accent-dim);box-shadow:0 0 12px var(--accent-glow);}
+  .nav-link svg{width:18px;height:18px;}
+  .nav-label{font-family:var(--font-data);font-size:7px;letter-spacing:0.05em;text-transform:uppercase;}
+
+  .page-wrap{margin-left:var(--nav-width);padding:20px;position:relative;z-index:1;display:grid;grid-template-columns:1fr 280px;gap:20px;}
+  .main-col{}
+  .sidebar-col{}
+
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+  .topbar h1{font-family:var(--font-head);font-size:18px;font-weight:700;letter-spacing:0.1em;}
+  .topbar .subtitle{font-family:var(--font-data);font-size:10px;color:var(--text-muted);letter-spacing:0.08em;margin-top:2px;}
+
+  .section-header{display:flex;align-items:center;gap:8px;margin-bottom:12px;margin-top:24px;}
+  .section-header:first-of-type{margin-top:0;}
+  .section-title{font-family:var(--font-data);font-size:10px;font-weight:500;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);}
+  .section-line{flex:1;height:1px;background:var(--border);}
+
+  /* Trending table */
+  .trend-table{width:100%;border-collapse:collapse;}
+  .trend-table th{font-family:var(--font-data);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);background:var(--bg-surface);}
+  .trend-table td{padding:10px 12px;border-bottom:1px solid rgba(0,229,255,0.06);vertical-align:middle;}
+  .trend-table tr:hover td{background:var(--bg-surface);}
+  .topic-name{font-weight:500;color:var(--text-primary);margin-bottom:2px;}
+  .topic-hook{font-size:11px;color:var(--text-muted);}
+  .platform-tag{display:inline-block;font-family:var(--font-data);font-size:8px;padding:2px 6px;border-radius:3px;}
+  .pt-tiktok{background:rgba(0,242,234,0.1);color:#00f2ea;}
+  .pt-ig{background:rgba(220,39,67,0.1);color:#e6683c;}
+  .pt-yt{background:rgba(255,0,0,0.1);color:#ff4444;}
+  .rating{display:flex;gap:2px;}
+  .star{color:var(--yellow);font-size:11px;}
+  .star.empty{color:var(--text-muted);}
+  .script-btn{font-family:var(--font-data);font-size:9px;padding:4px 10px;border-radius:4px;border:1px solid var(--accent);background:var(--accent-dim);color:var(--accent);cursor:pointer;transition:all 0.15s;white-space:nowrap;}
+  .script-btn:hover{background:var(--accent);color:#fff;}
+
+  /* Competitor cards */
+  .competitor-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+  .comp-card{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:14px;}
+  .comp-handle{font-family:var(--font-data);font-size:11px;color:var(--cyan);margin-bottom:4px;}
+  .comp-stats{display:flex;gap:12px;margin-top:6px;}
+  .comp-stat-label{font-family:var(--font-data);font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;}
+  .comp-stat-val{font-family:var(--font-head);font-size:14px;color:var(--text-primary);}
+
+  /* Hook library */
+  .hook-list{display:flex;flex-direction:column;gap:8px;}
+  .hook-item{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:12px;}
+  .hook-text{flex:1;font-size:12px;color:var(--text-secondary);line-height:1.4;}
+  .hook-text strong{color:var(--text-primary);}
+  .copy-btn{font-family:var(--font-data);font-size:9px;padding:4px 8px;border-radius:4px;border:1px solid var(--border);background:var(--bg-surface);color:var(--text-muted);cursor:pointer;transition:all 0.15s;white-space:nowrap;}
+  .copy-btn:hover{border-color:var(--cyan);color:var(--cyan);}
+  .copy-btn.copied{border-color:var(--green);color:var(--green);}
+
+  /* Idea bank sidebar */
+  .idea-capture{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:14px;}
+  .idea-capture h3{font-family:var(--font-data);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px;}
+  .idea-textarea{width:100%;background:var(--bg-surface);border:1px solid var(--border);border-radius:6px;padding:10px;color:var(--text-primary);font-family:var(--font-body);font-size:12px;resize:vertical;min-height:80px;outline:none;transition:border-color 0.2s;}
+  .idea-textarea:focus{border-color:var(--cyan);}
+  .idea-save-btn{width:100%;margin-top:8px;font-family:var(--font-data);font-size:10px;letter-spacing:0.1em;padding:8px;border-radius:6px;border:1px solid var(--accent);background:var(--accent-dim);color:var(--accent);cursor:pointer;transition:all 0.15s;}
+  .idea-save-btn:hover{background:var(--accent);color:#fff;}
+  .idea-bank{margin-top:16px;}
+  .idea-bank h3{font-family:var(--font-data);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;}
+  .idea-bank-list{display:flex;flex-direction:column;gap:6px;max-height:300px;overflow-y:auto;}
+  .idea-bank-item{background:var(--bg-surface);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:11px;color:var(--text-secondary);display:flex;align-items:flex-start;justify-content:space-between;gap:6px;}
+  .idea-del{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:0;line-height:1;}
+  .idea-del:hover{color:var(--red);}
+
+  @keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+</style>
+</head>
+<body>
+
+<nav class="nav-sidebar">
+  <div class="nav-logo">SM</div>
+  <div class="nav-links">
+    <a href="ai-dashboard.html" class="nav-link" title="Overview">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <span class="nav-label">Overview</span>
+    </a>
+    <a href="research.html" class="nav-link active" title="Research">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+      <span class="nav-label">Research</span>
+    </a>
+    <a href="pipeline.html" class="nav-link" title="Pipeline">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+      <span class="nav-label">Pipeline</span>
+    </a>
+    <a href="performance.html" class="nav-link" title="Performance">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span class="nav-label">Perf</span>
+    </a>
+    <a href="agents.html" class="nav-link" title="Agents">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>
+      <span class="nav-label">Agents</span>
+    </a>
+    <a href="clients.html" class="nav-link" title="Clients">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span class="nav-label">Clients</span>
+    </a>
+  </div>
+</nav>
+
+<div class="page-wrap">
+  <div class="main-col">
+    <div class="topbar">
+      <div>
+        <h1>CTRL <span style="color:var(--accent)">—</span> Research</h1>
+        <div class="subtitle">TRENDING TOPICS & COMPETITOR INTEL</div>
+      </div>
+    </div>
+
+    <div class="section-header">
+      <span class="section-title">Trending Topics</span>
+      <div class="section-line"></div>
+    </div>
+
+    <table class="trend-table">
+      <thead>
+        <tr>
+          <th>Topic</th>
+          <th>Platform</th>
+          <th>Potential</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><div class="topic-name">AI tools voor ondernemers 2026</div><div class="topic-hook">Hook: "Deze 5 tools wist je nog niet..."</div></td>
+          <td><span class="platform-tag pt-tiktok">TikTok</span></td>
+          <td><div class="rating"><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span></div></td>
+          <td><button class="script-btn" onclick="saveToIdeas('AI tools voor ondernemers 2026')">→ Script</button></td>
+        </tr>
+        <tr>
+          <td><div class="topic-name">Hoe je viraal gaat zonder groot account</div><div class="topic-hook">Hook: "Nobody tells you this about the algorithm..."</div></td>
+          <td><span class="platform-tag pt-ig">IG</span></td>
+          <td><div class="rating"><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star empty">★</span></div></td>
+          <td><button class="script-btn" onclick="saveToIdeas('Hoe je viraal gaat zonder groot account')">→ Script</button></td>
+        </tr>
+        <tr>
+          <td><div class="topic-name">Content maken in 1 uur per week</div><div class="topic-hook">Hook: "Ik maak een week content in 60 minuten..."</div></td>
+          <td><span class="platform-tag pt-yt">YouTube</span></td>
+          <td><div class="rating"><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star empty">★</span></div></td>
+          <td><button class="script-btn" onclick="saveToIdeas('Content maken in 1 uur per week')">→ Script</button></td>
+        </tr>
+        <tr>
+          <td><div class="topic-name">Waarom jouw concurrenten je inhalen</div><div class="topic-hook">Hook: "Ze gebruiken dit en jij niet..."</div></td>
+          <td><span class="platform-tag pt-tiktok">TikTok</span></td>
+          <td><div class="rating"><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star empty">★</span><span class="star empty">★</span></div></td>
+          <td><button class="script-btn" onclick="saveToIdeas('Waarom jouw concurrenten je inhalen')">→ Script</button></td>
+        </tr>
+        <tr>
+          <td><div class="topic-name">Van 0 naar 1000 volgers in 30 dagen</div><div class="topic-hook">Hook: "Ik deed dit experiment en..."</div></td>
+          <td><span class="platform-tag pt-ig">IG</span></td>
+          <td><div class="rating"><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span></div></td>
+          <td><button class="script-btn" onclick="saveToIdeas('Van 0 naar 1000 volgers in 30 dagen')">→ Script</button></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="section-header">
+      <span class="section-title">Competitor Pulse</span>
+      <div class="section-line"></div>
+    </div>
+
+    <div class="competitor-grid">
+      <div class="comp-card">
+        <div class="comp-handle">@concurrent1</div>
+        <div style="font-size:11px;color:var(--text-muted);">TikTok · Instagram</div>
+        <div class="comp-stats">
+          <div><div class="comp-stat-label">Followers</div><div class="comp-stat-val">24.3K</div></div>
+          <div><div class="comp-stat-label">Avg Views</div><div class="comp-stat-val">8.2K</div></div>
+          <div><div class="comp-stat-label">Posts/week</div><div class="comp-stat-val">4</div></div>
+        </div>
+      </div>
+      <div class="comp-card">
+        <div class="comp-handle">@concurrent2</div>
+        <div style="font-size:11px;color:var(--text-muted);">TikTok · YouTube</div>
+        <div class="comp-stats">
+          <div><div class="comp-stat-label">Followers</div><div class="comp-stat-val">18.7K</div></div>
+          <div><div class="comp-stat-label">Avg Views</div><div class="comp-stat-val">5.6K</div></div>
+          <div><div class="comp-stat-label">Posts/week</div><div class="comp-stat-val">3</div></div>
+        </div>
+      </div>
+      <div class="comp-card">
+        <div class="comp-handle">@concurrent3</div>
+        <div style="font-size:11px;color:var(--text-muted);">Instagram · YouTube</div>
+        <div class="comp-stats">
+          <div><div class="comp-stat-label">Followers</div><div class="comp-stat-val">41.2K</div></div>
+          <div><div class="comp-stat-label">Avg Views</div><div class="comp-stat-val">12.1K</div></div>
+          <div><div class="comp-stat-label">Posts/week</div><div class="comp-stat-val">5</div></div>
+        </div>
+      </div>
+      <div class="comp-card">
+        <div class="comp-handle">@concurrent4</div>
+        <div style="font-size:11px;color:var(--text-muted);">TikTok</div>
+        <div class="comp-stats">
+          <div><div class="comp-stat-label">Followers</div><div class="comp-stat-val">9.8K</div></div>
+          <div><div class="comp-stat-label">Avg Views</div><div class="comp-stat-val">3.4K</div></div>
+          <div><div class="comp-stat-label">Posts/week</div><div class="comp-stat-val">7</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-header">
+      <span class="section-title">Hook Formula Library</span>
+      <div class="section-line"></div>
+    </div>
+
+    <div class="hook-list">
+      <div class="hook-item">
+        <div class="hook-text"><strong>"Nobody tells you [PAINFUL TRUTH] about [TOPIC]"</strong><br>Werkt goed voor taboe-onderwerpen en onverwachte inzichten</div>
+        <button class="copy-btn" onclick="copyHook(this,'Nobody tells you [PAINFUL TRUTH] about [TOPIC]')">Copy</button>
+      </div>
+      <div class="hook-item">
+        <div class="hook-text"><strong>"I did [EXPERIMENT] for [TIME PERIOD] and here's what happened"</strong><br>Social proof + nieuwsgierigheid, hoog kijkpercentage</div>
+        <button class="copy-btn" onclick="copyHook(this,'I did [EXPERIMENT] for [TIME PERIOD] and here\'s what happened')">Copy</button>
+      </div>
+      <div class="hook-item">
+        <div class="hook-text"><strong>"Stop doing [COMMON MISTAKE] — do THIS instead"</strong><br>Pijnpunt direct aanpakken, hoge engagement</div>
+        <button class="copy-btn" onclick="copyHook(this,'Stop doing [COMMON MISTAKE] — do THIS instead')">Copy</button>
+      </div>
+      <div class="hook-item">
+        <div class="hook-text"><strong>"[NUMBER] things [TARGET AUDIENCE] wish they knew before [ACTION]"</strong><br>List-format, deelbaar en opgeslagen</div>
+        <button class="copy-btn" onclick="copyHook(this,'[NUMBER] things [TARGET AUDIENCE] wish they knew before [ACTION]')">Copy</button>
+      </div>
+      <div class="hook-item">
+        <div class="hook-text"><strong>"The [INDUSTRY] secret that [RESULT] in [TIME]"</strong><br>Schaarste + belofte, werkt op alle platforms</div>
+        <button class="copy-btn" onclick="copyHook(this,'The [INDUSTRY] secret that [RESULT] in [TIME]')">Copy</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar-col">
+    <div class="idea-capture">
+      <h3>Quick Capture</h3>
+      <textarea class="idea-textarea" id="ideaInput" placeholder="Typ hier je idee, hook, of notitie..."></textarea>
+      <button class="idea-save-btn" onclick="saveIdea()">+ Opslaan in Idea Bank</button>
+    </div>
+
+    <div class="idea-bank">
+      <h3>Idea Bank (<span id="ideaCount">0</span>)</h3>
+      <div class="idea-bank-list" id="ideaBankList"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function copyHook(btn, text) {
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+    });
+  }
+
+  function getIdeas() {
+    return JSON.parse(localStorage.getItem('ctrl_research_ideas') || '[]');
+  }
+
+  function saveIdeas(ideas) {
+    localStorage.setItem('ctrl_research_ideas', JSON.stringify(ideas));
+    // also push to pipeline ideas key
+    const pipelineIdeas = JSON.parse(localStorage.getItem('ctrl_pipeline_ideas') || '[]');
+    localStorage.setItem('ctrl_pipeline_ideas', JSON.stringify([...pipelineIdeas, ...ideas]));
+    renderIdeas();
+  }
+
+  function saveIdea() {
+    const input = document.getElementById('ideaInput');
+    const text = input.value.trim();
+    if (!text) return;
+    const ideas = getIdeas();
+    ideas.unshift({ id: Date.now(), text });
+    localStorage.setItem('ctrl_research_ideas', JSON.stringify(ideas));
+    input.value = '';
+    renderIdeas();
+  }
+
+  function saveToIdeas(topic) {
+    const ideas = getIdeas();
+    ideas.unshift({ id: Date.now(), text: topic });
+    localStorage.setItem('ctrl_research_ideas', JSON.stringify(ideas));
+    // push to pipeline
+    const pipeIdeas = JSON.parse(localStorage.getItem('ctrl_pipeline_ideas') || '[]');
+    pipeIdeas.push(topic);
+    localStorage.setItem('ctrl_pipeline_ideas', JSON.stringify(pipeIdeas));
+    renderIdeas();
+  }
+
+  function deleteIdea(id) {
+    const ideas = getIdeas().filter(i => i.id !== id);
+    localStorage.setItem('ctrl_research_ideas', JSON.stringify(ideas));
+    renderIdeas();
+  }
+
+  function renderIdeas() {
+    const ideas = getIdeas();
+    document.getElementById('ideaCount').textContent = ideas.length;
+    const list = document.getElementById('ideaBankList');
+    list.innerHTML = ideas.map(i => `
+      <div class="idea-bank-item">
+        <span>${i.text}</span>
+        <button class="idea-del" onclick="deleteIdea(${i.id})">✕</button>
+      </div>
+    `).join('');
+  }
+
+  renderIdeas();
+</script>
+</body>
+</html>
