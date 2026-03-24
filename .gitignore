@@ -1,6 +1,9 @@
 # Environment variables — NOOIT uploaden naar GitHub
 .env
 
+# Gecachte data (wordt live opgehaald via Apify)
+data/*.json
+
 # OS bestanden
 .DS_Store
 Thumbs.db

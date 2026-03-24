@@ -22,7 +22,7 @@ const { spawn } = require('child_process');
 
 require('./load-env');
 
-const PORT         = 3001;
+const PORT         = process.env.PORT || 3001;
 const APIFY_TOKEN  = process.env.APIFY_API_TOKEN;
 const TT_ACTOR_ID  = process.env.APIFY_TIKTOK_OWN_ACTOR_ID;
 const IG_ACTOR_ID  = process.env.APIFY_INSTAGRAM_OWN_ACTOR_ID;

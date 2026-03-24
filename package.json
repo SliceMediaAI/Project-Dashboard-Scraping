@@ -1,0 +1,12 @@
+{
+  "name": "slice-media-dashboard",
+  "version": "1.0.0",
+  "description": "Slice Media Content Dashboard",
+  "main": "proxy.js",
+  "scripts": {
+    "start": "node proxy.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
