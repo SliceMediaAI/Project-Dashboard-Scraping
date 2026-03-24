@@ -76,6 +76,19 @@ function apifyRequest(method, apiPath, body) {
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+function saveFollowerHistory(platform, followers) {
+  const histFile = path.join(DATA_DIR, 'followers_history.json');
+  let history = [];
+  if (fs.existsSync(histFile)) {
+    try { history = JSON.parse(fs.readFileSync(histFile)); } catch(e) {}
+  }
+  history.push({ platform, followers, timestamp: new Date().toISOString() });
+  // Bewaar max 90 dagen
+  const cutoff = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+  history = history.filter(h => h.timestamp > cutoff);
+  fs.writeFileSync(histFile, JSON.stringify(history, null, 2));
+}
+
 async function runApifyActor(actorId, input) {
   const run = await apifyRequest('POST', `/acts/${actorId}/runs`, input);
   if (!run.data?.id) throw new Error('Actor start failed');
@@ -238,6 +251,7 @@ const server = http.createServer(async (req, res) => {
       const data = processTikTok(raw);
       if (data) {
         fs.writeFileSync(path.join(DATA_DIR, 'tiktok.json'), JSON.stringify(data, null, 2));
+        saveFollowerHistory('tiktok', data.followers);
       }
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(data || { error: 'no_data' }));
@@ -261,6 +275,7 @@ const server = http.createServer(async (req, res) => {
       const data = processInstagram(raw);
       if (data) {
         fs.writeFileSync(path.join(DATA_DIR, 'instagram.json'), JSON.stringify(data, null, 2));
+        saveFollowerHistory('instagram', data.followers);
       }
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(data || { error: 'no_data' }));
@@ -279,6 +294,7 @@ const server = http.createServer(async (req, res) => {
       const data = await fetchYouTube();
       if (data) {
         fs.writeFileSync(path.join(DATA_DIR, 'youtube.json'), JSON.stringify(data, null, 2));
+        saveFollowerHistory('youtube', data.subscribers);
       }
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(data || { error: 'no_youtube_config' }));

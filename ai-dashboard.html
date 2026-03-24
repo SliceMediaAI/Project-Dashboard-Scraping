@@ -1388,6 +1388,42 @@
     return { avg, sparkline };
   }
 
+  function calcFollowerDelta(platform, current) {
+    const raw = localStorage.getItem('ctrl_followers_history');
+    if (!raw) return null;
+    try {
+      const history = JSON.parse(raw).filter(h => h.platform === platform);
+      if (!history.length) return null;
+      const now = Date.now();
+      let msAgo;
+      if (dashPeriod === '7d')  msAgo = 7  * 24 * 60 * 60 * 1000;
+      else if (dashPeriod === '30d') msAgo = 30 * 24 * 60 * 60 * 1000;
+      else if (dashPeriod === '1y')  msAgo = 365 * 24 * 60 * 60 * 1000;
+      // Zoek de meting die het dichtst bij het gekozen punt zit
+      const cutoff = now - msAgo;
+      const past = history
+        .map(h => ({ ...h, ts: new Date(h.timestamp).getTime() }))
+        .filter(h => h.ts <= cutoff)
+        .sort((a, b) => b.ts - a.ts)[0];
+      if (!past) {
+        // Nog niet genoeg history — vergelijk met de oudste meting
+        const oldest = [...history].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))[0];
+        return current - oldest.followers;
+      }
+      return current - past.followers;
+    } catch(e) { return null; }
+  }
+
+  function applyFollowerChange(elId, delta) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    if (delta === null) { el.textContent = '—'; el.classList.remove('down'); return; }
+    const label = dashPeriod === '7d' ? '7d' : dashPeriod === '30d' ? '30d' : '1j';
+    const sign = delta >= 0 ? '+' : '';
+    el.textContent = sign + delta.toLocaleString('nl-NL') + ' (' + label + ')';
+    el.classList.toggle('down', delta < 0);
+  }
+
   function loadCachedSocial() {
     // TikTok
     const ttRaw = localStorage.getItem('ctrl_tiktok_data');
@@ -1395,6 +1431,7 @@
       try {
         const d = JSON.parse(ttRaw);
         document.getElementById('tt-followers').textContent = fmtNum(d.followers);
+        applyFollowerChange('tt-followers-change', calcFollowerDelta('tiktok', d.followers));
         document.getElementById('tt-posts').textContent = fmtNum(d.posts);
         const stats = calcStats(d.posts_data, 'views');
         document.getElementById('tt-views').textContent = fmtNum(stats.avg || d.avgViews);
@@ -1411,6 +1448,7 @@
       try {
         const d = JSON.parse(igRaw);
         document.getElementById('ig-followers').textContent = fmtNum(d.followers);
+        applyFollowerChange('ig-followers-change', calcFollowerDelta('instagram', d.followers));
         document.getElementById('ig-posts').textContent = fmtNum(d.posts);
         const stats = calcStats(d.posts_data, 'likes');
         document.getElementById('ig-likes').textContent = fmtNum(stats.avg || d.avgLikes);
@@ -1427,6 +1465,7 @@
       try {
         const d = JSON.parse(ytRaw);
         document.getElementById('yt-subs').textContent = fmtNum(d.subscribers);
+        applyFollowerChange('yt-subs-change', calcFollowerDelta('youtube', d.subscribers));
         document.getElementById('yt-videos').textContent = fmtNum(d.videos);
         const stats = calcStats(d.posts_data, 'views');
         document.getElementById('yt-views').textContent = fmtNum(stats.avg || d.avgViews);
@@ -1464,10 +1503,11 @@
   // Try loading from proxy server data files
   async function tryLoadFromProxy() {
     try {
-      const [ttRes, igRes, ytRes] = await Promise.allSettled([
+      const [ttRes, igRes, ytRes, histRes] = await Promise.allSettled([
         fetch('http://localhost:3001/data/tiktok.json'),
         fetch('http://localhost:3001/data/instagram.json'),
         fetch('http://localhost:3001/data/youtube.json'),
+        fetch('http://localhost:3001/data/followers_history.json'),
       ]);
       if (ttRes.status === 'fulfilled' && ttRes.value.ok) {
         const d = await ttRes.value.json();
@@ -1480,6 +1520,10 @@
       if (ytRes.status === 'fulfilled' && ytRes.value.ok) {
         const d = await ytRes.value.json();
         localStorage.setItem('ctrl_youtube_data', JSON.stringify(d));
+      }
+      if (histRes.status === 'fulfilled' && histRes.value.ok) {
+        const d = await histRes.value.json();
+        localStorage.setItem('ctrl_followers_history', JSON.stringify(d));
       }
       loadCachedSocial();
     } catch(e) {
