@@ -76,6 +76,67 @@ function apifyRequest(method, apiPath, body) {
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+// ─── POST TIMES ANALYSE ───────────────────────────────────
+// Metriek per platform: TikTok/YouTube → views, Instagram → likes
+function analyzePostTimes(platform, postsData, metric) {
+  const logFile = path.join(DATA_DIR, 'posttimes_log.json');
+  let log = { entries: [], schedule: { tiktok: Array(7).fill(null), instagram: Array(7).fill(null), youtube: Array(7).fill(null) }, last_analyzed: null };
+  if (fs.existsSync(logFile)) {
+    try { log = JSON.parse(fs.readFileSync(logFile)); } catch(e) {}
+  }
+
+  // Voeg nieuwe posts toe aan het logboek (dedupliceer op platform+titel+dag)
+  const existing = new Set(log.entries.map(e => `${e.platform}|${e.post_title}|${e.day}`));
+  let added = 0;
+  (postsData || []).forEach(post => {
+    if (!post.timestamp) return;
+    const d = new Date(post.timestamp);
+    const day  = (d.getDay() + 6) % 7; // 0=Ma … 6=Zo
+    const hour = d.getHours();
+    const engagement = post[metric] || 0;
+    const key = `${platform}|${(post.title||'').substring(0,40)}|${day}`;
+    if (!existing.has(key) && engagement > 0) {
+      log.entries.push({ platform, day, hour, engagement, metric, post_title: (post.title||'').substring(0,40), logged_at: new Date().toISOString() });
+      existing.add(key);
+      added++;
+    }
+  });
+
+  if (added === 0) {
+    fs.writeFileSync(logFile, JSON.stringify(log, null, 2));
+    return log;
+  }
+
+  // Herbereken schema voor dit platform op basis van alle entries
+  const byDay = Array.from({length:7}, () => ({ totalEng: 0, totalHour: 0, count: 0 }));
+  log.entries.filter(e => e.platform === platform).forEach(e => {
+    byDay[e.day].totalEng  += e.engagement;
+    byDay[e.day].totalHour += e.hour;
+    byDay[e.day].count++;
+  });
+
+  // Normaliseer engagement per dag, kies top 3 dagen
+  const avgEng = byDay.map((d, i) => ({ day: i, avg: d.count ? d.totalEng / d.count : 0, avgHour: d.count ? Math.round(d.totalHour / d.count) : 12 }));
+  const maxAvg = Math.max(...avgEng.map(d => d.avg));
+  if (maxAvg === 0) { fs.writeFileSync(logFile, JSON.stringify(log, null, 2)); return log; }
+
+  // Selecteer dagen met minstens 60% van de beste dag
+  const threshold = maxAvg * 0.6;
+  const newSchedule = Array(7).fill(null);
+  avgEng.forEach(d => {
+    if (d.avg >= threshold) {
+      const h = d.avgHour;
+      newSchedule[d.day] = `${String(h).padStart(2,'0')}:00`;
+    }
+  });
+  log.schedule[platform] = newSchedule;
+  log.last_analyzed = new Date().toISOString();
+
+  fs.writeFileSync(logFile, JSON.stringify(log, null, 2));
+  console.log(`  PostTimes [${platform}]: +${added} posts, schema bijgewerkt`);
+  return log;
+}
+
 function saveFollowerHistory(platform, followers) {
   const histFile = path.join(DATA_DIR, 'followers_history.json');
   let history = [];
@@ -252,6 +313,7 @@ const server = http.createServer(async (req, res) => {
       if (data) {
         fs.writeFileSync(path.join(DATA_DIR, 'tiktok.json'), JSON.stringify(data, null, 2));
         saveFollowerHistory('tiktok', data.followers);
+        analyzePostTimes('tiktok', data.posts_data, 'views');
       }
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(data || { error: 'no_data' }));
@@ -276,6 +338,7 @@ const server = http.createServer(async (req, res) => {
       if (data) {
         fs.writeFileSync(path.join(DATA_DIR, 'instagram.json'), JSON.stringify(data, null, 2));
         saveFollowerHistory('instagram', data.followers);
+        analyzePostTimes('instagram', data.posts_data, 'likes');
       }
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(data || { error: 'no_data' }));
@@ -295,6 +358,7 @@ const server = http.createServer(async (req, res) => {
       if (data) {
         fs.writeFileSync(path.join(DATA_DIR, 'youtube.json'), JSON.stringify(data, null, 2));
         saveFollowerHistory('youtube', data.subscribers);
+        analyzePostTimes('youtube', data.posts_data, 'views');
       }
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(data || { error: 'no_youtube_config' }));

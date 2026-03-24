@@ -1250,13 +1250,16 @@
   }
 
   // ── BESTE POSTTIJDEN ────────────────────────────────────
-  (function buildPostTimes() {
+  // Fallback schema (handmatig, wordt overschreven zodra er genoeg data is)
+  const DEFAULT_SCHEDULE = {
+    tiktok:    ['18:00','07:00','18:00',null,'18:00','10:00','12:00'],
+    instagram: ['11:00',null,'19:00','11:00','17:00','10:00',null],
+    youtube:   [null,null,null,'17:00',null,'17:00','18:00'],
+  };
+
+  function buildPostTimes(scheduleOverride) {
     const dayNames = ['Ma','Di','Wo','Do','Vr','Za','Zo'];
-    const schedule = {
-      tiktok:    ['18:00','07:00','18:00',null,'18:00','10:00','12:00'],
-      instagram: ['11:00',null,'19:00','11:00','17:00','10:00',null],
-      youtube:   [null,null,null,'17:00',null,'17:00','18:00'],
-    };
+    const schedule = scheduleOverride || JSON.parse(localStorage.getItem('ctrl_posttimes_schedule') || 'null') || DEFAULT_SCHEDULE;
     const labels = { tiktok:'TikTok', instagram:'Instagram', youtube:'YouTube' };
     const colors = { tiktok:'#00f2ea', instagram:'#e6683c', youtube:'#ff4444' };
     const adviceStyle = {
@@ -1326,7 +1329,9 @@
 
     html += '</div>';
     document.getElementById('postTimesBanner').innerHTML = html;
-  })();
+  }
+
+  buildPostTimes();
 
   let dashPeriod = '7d';
 
@@ -1503,11 +1508,12 @@
   // Try loading from proxy server data files
   async function tryLoadFromProxy() {
     try {
-      const [ttRes, igRes, ytRes, histRes] = await Promise.allSettled([
+      const [ttRes, igRes, ytRes, histRes, ptRes] = await Promise.allSettled([
         fetch('http://localhost:3001/data/tiktok.json'),
         fetch('http://localhost:3001/data/instagram.json'),
         fetch('http://localhost:3001/data/youtube.json'),
         fetch('http://localhost:3001/data/followers_history.json'),
+        fetch('http://localhost:3001/data/posttimes_log.json'),
       ]);
       if (ttRes.status === 'fulfilled' && ttRes.value.ok) {
         const d = await ttRes.value.json();
@@ -1524,6 +1530,13 @@
       if (histRes.status === 'fulfilled' && histRes.value.ok) {
         const d = await histRes.value.json();
         localStorage.setItem('ctrl_followers_history', JSON.stringify(d));
+      }
+      if (ptRes.status === 'fulfilled' && ptRes.value.ok) {
+        const d = await ptRes.value.json();
+        if (d.schedule) {
+          localStorage.setItem('ctrl_posttimes_schedule', JSON.stringify(d.schedule));
+          buildPostTimes(d.schedule);
+        }
       }
       loadCachedSocial();
     } catch(e) {
