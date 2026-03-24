@@ -196,17 +196,22 @@ function processInstagram(rawItems) {
   const followers = profile.followersCount || 0;
   const postCount = profile.postsCount || 0;
   const rawPosts = profile.latestPosts || [];
-  const posts = rawPosts.slice(0, 10).map(item => ({
-    title: (item.caption || 'Instagram Post').substring(0, 80),
-    date: item.timestamp ? new Date(item.timestamp).toLocaleDateString('nl-NL') : '',
-    timestamp: item.timestamp || null,
-    likes: item.likesCount || 0,
-    comments: item.commentsCount || 0,
-    views: item.videoViewCount || 0,
-  }));
+  const posts = rawPosts.slice(0, 10).map(item => {
+    const likes    = item.likesCount || 0;
+    const comments = item.commentsCount || 0;
+    const saves    = item.videoSaveCount || item.saveCount || item.savedCount || item.igtvVideoSaveCount || 0;
+    const views    = item.videoViewCount || 0;
+    return {
+      title: (item.caption || 'Instagram Post').substring(0, 80),
+      date: item.timestamp ? new Date(item.timestamp).toLocaleDateString('nl-NL') : '',
+      timestamp: item.timestamp || null,
+      likes, comments, saves, views,
+      engScore: likes + comments + saves,
+    };
+  });
   const avgLikes = posts.length ? Math.round(posts.reduce((s, p) => s + p.likes, 0) / posts.length) : 0;
   const engRate = followers > 0 && posts.length > 0
-    ? ((posts.reduce((s, p) => s + p.likes + p.comments, 0) / posts.length / followers) * 100).toFixed(1)
+    ? ((posts.reduce((s, p) => s + p.likes + p.comments + p.saves, 0) / posts.length / followers) * 100).toFixed(1)
     : '0.0';
   return { followers, posts: postCount, avgLikes, engRate, sparkline: posts.slice(0, 7).reverse().map(p => p.likes), posts_data: posts };
 }
@@ -338,7 +343,7 @@ const server = http.createServer(async (req, res) => {
       if (data) {
         fs.writeFileSync(path.join(DATA_DIR, 'instagram.json'), JSON.stringify(data, null, 2));
         saveFollowerHistory('instagram', data.followers);
-        analyzePostTimes('instagram', data.posts_data, 'likes');
+        analyzePostTimes('instagram', data.posts_data, 'engScore');
       }
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(data || { error: 'no_data' }));
