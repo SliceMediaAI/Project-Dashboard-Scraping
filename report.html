@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CTRL — Maandrapport</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=JetBrains+Mono:wght@300;400;500;700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-void: #020408;
+    --bg-deep: #050c10;
+    --bg-surface: #0a1520;
+    --bg-elevated: #0f1e2e;
+    --bg-card: #0d1a27;
+    --accent: #d55012;
+    --accent-dim: rgba(213, 80, 18, 0.15);
+    --accent-glow: rgba(213, 80, 18, 0.4);
+    --cyan: #00e5ff;
+    --cyan-dim: rgba(0, 229, 255, 0.1);
+    --cyan-glow: rgba(0, 229, 255, 0.3);
+    --green: #00ff9d;
+    --green-dim: rgba(0, 255, 157, 0.1);
+    --yellow: #ffd600;
+    --red: #ff3d5a;
+    --text-primary: #e8f4ff;
+    --text-secondary: #b0cfe8;
+    --text-muted: #6b90ad;
+    --border: rgba(0, 229, 255, 0.12);
+    --border-accent: rgba(213, 80, 18, 0.3);
+    --nav-width: 62px;
+    --font-head: 'Orbitron', monospace;
+    --font-data: 'JetBrains Mono', monospace;
+    --font-body: 'Outfit', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg-void);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-size: 13px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0, 229, 255, 0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 229, 255, 0.025) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    top: -50%;
+    left: 30%;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(213, 80, 18, 0.06) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* NAV */
+  .nav-sidebar {
+    position: fixed;
+    left: 0; top: 0; bottom: 0;
+    width: var(--nav-width);
+    background: rgba(5, 12, 16, 0.95);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 0;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+  }
+
+  .nav-logo {
+    width: 36px; height: 36px;
+    background: var(--accent);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-head);
+    font-size: 11px;
+    font-weight: 900;
+    color: #fff;
+    margin-bottom: 24px;
+    box-shadow: 0 0 16px var(--accent-glow);
+  }
+
+  .nav-links { display: flex; flex-direction: column; gap: 4px; width: 100%; padding: 0 8px; flex: 1; }
+
+  .nav-link {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 3px; padding: 8px 4px; border-radius: 8px;
+    text-decoration: none; color: var(--text-muted); transition: all 0.2s; cursor: pointer;
+  }
+  .nav-link:hover { color: var(--cyan); background: var(--cyan-dim); }
+  .nav-link.active { color: var(--accent); background: var(--accent-dim); box-shadow: 0 0 12px var(--accent-glow); }
+  .nav-link svg { width: 18px; height: 18px; }
+  .nav-label { font-family: var(--font-data); font-size: 7px; letter-spacing: 0.05em; text-transform: uppercase; }
+
+  /* LAYOUT */
+  .app-layout { display: flex; margin-left: var(--nav-width); min-height: 100vh; position: relative; z-index: 1; }
+  .main-content { flex: 1; min-width: 0; padding: 20px; max-width: 900px; }
+
+  /* TOPBAR */
+  .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+  .topbar-left h1 { font-family: var(--font-head); font-size: 18px; font-weight: 700; letter-spacing: 0.1em; }
+  .topbar-left .subtitle { font-family: var(--font-data); font-size: 10px; color: var(--text-muted); margin-top: 3px; }
+
+  .gen-btn {
+    font-family: var(--font-data);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: 1px solid var(--accent);
+    background: var(--accent-dim);
+    color: var(--accent);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .gen-btn:hover { background: var(--accent); color: #fff; box-shadow: 0 0 16px var(--accent-glow); }
+  .gen-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* STATUS BAR */
+  .status-bar {
+    display: flex;
+    gap: 20px;
+    padding: 12px 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-family: var(--font-data);
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+  .status-item strong { color: var(--text-secondary); margin-left: 4px; }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted); display: inline-block; margin-right: 6px; }
+  .status-dot.green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+
+  /* TOP POSTS */
+  .section-label {
+    font-family: var(--font-data);
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .posts-grid { display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px; }
+
+  .post-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    transition: border-color 0.2s;
+  }
+  .post-card:hover { border-color: rgba(0, 229, 255, 0.25); }
+  .post-card.rank-1 { border-left: 3px solid var(--accent); }
+  .post-card.rank-2 { border-left: 3px solid var(--cyan); }
+  .post-card.rank-3 { border-left: 3px solid var(--green); }
+
+  .post-rank {
+    font-family: var(--font-head);
+    font-size: 20px;
+    font-weight: 900;
+    color: var(--bg-elevated);
+    min-width: 28px;
+    line-height: 1;
+    margin-top: 2px;
+  }
+  .rank-1 .post-rank { color: var(--accent); }
+  .rank-2 .post-rank { color: var(--cyan); }
+  .rank-3 .post-rank { color: var(--green); }
+
+  .post-body { flex: 1; min-width: 0; }
+  .post-title {
+    font-size: 13px;
+    color: var(--text-primary);
+    line-height: 1.4;
+    margin-bottom: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .post-meta {
+    font-family: var(--font-data);
+    font-size: 9px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+  .post-metrics { display: flex; gap: 12px; }
+  .metric-pill {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-family: var(--font-data);
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+  }
+  .metric-pill .val { color: var(--text-primary); font-weight: 500; }
+  .metric-pill .lbl { color: var(--text-muted); }
+  .eng-score {
+    margin-left: auto;
+    font-family: var(--font-data);
+    font-size: 11px;
+    color: var(--accent);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  /* ANALYSE TEKST */
+  .analyse-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 22px;
+    margin-bottom: 24px;
+    line-height: 1.7;
+  }
+
+  .analyse-card h2 {
+    font-family: var(--font-head);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin: 18px 0 8px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+  }
+  .analyse-card h2:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+
+  .analyse-card p { color: var(--text-secondary); font-size: 13px; margin-bottom: 10px; }
+  .analyse-card ul, .analyse-card ol { padding-left: 18px; color: var(--text-secondary); font-size: 13px; }
+  .analyse-card li { margin-bottom: 6px; }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+    font-family: var(--font-data);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+  }
+  .empty-state .big { font-size: 32px; margin-bottom: 12px; }
+
+  /* BEST DAYS */
+  .days-grid { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+  .day-pill {
+    padding: 8px 14px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-family: var(--font-data);
+    font-size: 10px;
+  }
+  .day-pill .day-name { color: var(--text-secondary); display: block; margin-bottom: 3px; }
+  .day-pill .day-eng  { color: var(--accent); font-size: 13px; font-weight: 600; }
+  .day-pill .day-cnt  { color: var(--text-muted); font-size: 9px; }
+
+  @keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+  .animate { animation: fadeUp 0.35s ease both; }
+</style>
+</head>
+<body>
+
+<nav class="nav-sidebar">
+  <div class="nav-logo">SM</div>
+  <div class="nav-links">
+    <a href="ai-dashboard.html" class="nav-link" title="Overview">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+        <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+      </svg>
+      <span class="nav-label">Overview</span>
+    </a>
+    <a href="research.html" class="nav-link" title="Research">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/>
+      </svg>
+      <span class="nav-label">Research</span>
+    </a>
+    <a href="pipeline.html" class="nav-link" title="Pipeline">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>
+      </svg>
+      <span class="nav-label">Pipeline</span>
+    </a>
+    <a href="performance.html" class="nav-link" title="Performance">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+      </svg>
+      <span class="nav-label">Perf</span>
+    </a>
+    <a href="agents.html" class="nav-link" title="Agents">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>
+      </svg>
+      <span class="nav-label">Agents</span>
+    </a>
+    <a href="report.html" class="nav-link active" title="Rapport">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="16" y1="13" x2="8" y2="13"/>
+        <line x1="16" y1="17" x2="8" y2="17"/>
+        <line x1="10" y1="9" x2="8" y2="9"/>
+      </svg>
+      <span class="nav-label">Rapport</span>
+    </a>
+    <a href="clients.html" class="nav-link" title="Clients">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+      <span class="nav-label">Clients</span>
+    </a>
+  </div>
+</nav>
+
+<div class="app-layout">
+  <div class="main-content">
+
+    <div class="topbar animate">
+      <div class="topbar-left">
+        <h1>MAANDRAPPORT</h1>
+        <div class="subtitle" id="reportSubtitle">Instagram performance analyse — door Claude</div>
+      </div>
+      <button class="gen-btn" id="genBtn" onclick="generateReport()">↻ Genereer rapport</button>
+    </div>
+
+    <div class="status-bar animate" id="statusBar">
+      <span><span class="status-dot" id="statusDot"></span><span id="statusText">Geen rapport beschikbaar</span></span>
+      <span>Periode: <strong id="statusPeriod">—</strong></span>
+      <span>Posts geanalyseerd: <strong id="statusPosts">—</strong></span>
+      <span>Gem. engagement: <strong id="statusAvgEng">—</strong></span>
+      <span>Volgers: <strong id="statusFollowers">—</strong></span>
+    </div>
+
+    <div id="reportContent">
+      <div class="empty-state animate">
+        <div class="big">📊</div>
+        Klik op "Genereer rapport" om de maandanalyse te starten.<br>
+        Claude analyseert je top posts en geeft concreet advies.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  function fmtNum(n) {
+    if (!n && n !== 0) return '—';
+    if (n >= 1000) return (n/1000).toFixed(1)+'K';
+    return n.toString();
+  }
+
+  function renderReport(r) {
+    // Status bar
+    const dot = document.getElementById('statusDot');
+    dot.className = 'status-dot green';
+    const ts = new Date(r.generated_at);
+    document.getElementById('statusText').textContent = 'Gegenereerd op ' + ts.toLocaleDateString('nl-NL') + ' ' + ts.toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('statusPeriod').textContent = r.period || '—';
+    document.getElementById('statusPosts').textContent = r.posts_analyzed || '—';
+    document.getElementById('statusAvgEng').textContent = r.avg_engagement || '—';
+    document.getElementById('statusFollowers').textContent = fmtNum(r.account?.followers);
+    document.getElementById('reportSubtitle').textContent =
+      'Instagram @tim_slicemedia — ' + (r.period || 'laatste beschikbare data') +
+      (r.account?.follower_growth_30d != null ? ` — volgers: ${r.account.follower_growth_30d >= 0 ? '+' : ''}${r.account.follower_growth_30d} (30d)` : '');
+
+    const rankClass = ['rank-1','rank-2','rank-3','rank-4','rank-5'];
+
+    // Top posts
+    let html = '<div class="section-label animate">Top posts — engagement score (likes + comments + saves)</div>';
+    html += '<div class="posts-grid animate">';
+    (r.top_posts || []).forEach((p, i) => {
+      const saves = p.saves || 0;
+      html += `<div class="post-card ${rankClass[i]||''}">
+        <div class="post-rank">${i+1}</div>
+        <div class="post-body">
+          <div class="post-title" title="${p.title}">${p.title}</div>
+          <div class="post-meta">${p.date || ''}${p.timestamp ? ' &nbsp;·&nbsp; ' + ['Ma','Di','Wo','Do','Vr','Za','Zo'][(new Date(p.timestamp).getDay()+6)%7] + ' ' + new Date(p.timestamp).toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'}) : ''}</div>
+          <div class="post-metrics">
+            <div class="metric-pill"><span class="val">${p.likes}</span><span class="lbl">likes</span></div>
+            <div class="metric-pill"><span class="val">${p.comments}</span><span class="lbl">comments</span></div>
+            <div class="metric-pill"><span class="val">${saves}</span><span class="lbl">saves</span></div>
+            ${p.views ? `<div class="metric-pill"><span class="val">${fmtNum(p.views)}</span><span class="lbl">views</span></div>` : ''}
+            <div class="eng-score">Score: ${p.engScore}</div>
+          </div>
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+
+    // Beste dagen
+    if (r.best_days && r.best_days.length) {
+      html += '<div class="section-label animate">Beste postdagen (historisch)</div>';
+      html += '<div class="days-grid animate">';
+      r.best_days.forEach(d => {
+        html += `<div class="day-pill">
+          <span class="day-name">${d.dag}</span>
+          <span class="day-eng">${d.gemEng}</span>
+          <span class="day-cnt">${d.posts} posts</span>
+        </div>`;
+      });
+      html += '</div>';
+    }
+
+    // AI Analyse
+    if (r.analyse) {
+      html += '<div class="section-label animate">AI Analyse — door Claude</div>';
+      html += '<div class="analyse-card animate">' + markdownToHtml(r.analyse) + '</div>';
+    }
+
+    document.getElementById('reportContent').innerHTML = html;
+  }
+
+  function markdownToHtml(md) {
+    return md
+      .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+      .replace(/^### (.+)$/gm, '<h2>$1</h2>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/^- (.+)$/gm, '<li>$1</li>')
+      .replace(/(<li>.*<\/li>\n?)+/g, s => '<ul>' + s + '</ul>')
+      .replace(/\n\n/g, '</p><p>')
+      .replace(/^(?!<[hul])/gm, '')
+      .split('\n').map(l => l.match(/^<[hul2]/) ? l : (l ? '<p>'+l+'</p>' : '')).join('');
+  }
+
+  async function generateReport() {
+    const btn = document.getElementById('genBtn');
+    btn.disabled = true;
+    btn.textContent = '↻ Analyseren...';
+
+    try {
+      const res = await fetch('http://localhost:3001/report/monthly', { method: 'POST' });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Onbekende fout');
+      }
+      const report = await res.json();
+      renderReport(report);
+    } catch(e) {
+      document.getElementById('reportContent').innerHTML =
+        `<div class="empty-state"><div class="big">⚠</div>${e.message}</div>`;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '↻ Genereer rapport';
+    }
+  }
+
+  // Laad bestaand rapport bij opstarten
+  async function loadExisting() {
+    try {
+      const res = await fetch('http://localhost:3001/data/monthly_report.json');
+      if (res.ok) {
+        const r = await res.json();
+        renderReport(r);
+      }
+    } catch(e) {}
+  }
+
+  loadExisting();
+</script>
+</body>
+</html>

@@ -375,6 +375,113 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // ── POST /report/monthly ──────────────────────────────
+  if (req.method === 'POST' && url === '/report/monthly') {
+    try {
+      console.log('  Generating monthly report...');
+
+      // Laad Instagram data
+      const igFile  = path.join(DATA_DIR, 'instagram.json');
+      const ptFile  = path.join(DATA_DIR, 'posttimes_log.json');
+      const fhFile  = path.join(DATA_DIR, 'followers_history.json');
+
+      const ig = fs.existsSync(igFile)  ? JSON.parse(fs.readFileSync(igFile))  : null;
+      const pt = fs.existsSync(ptFile)  ? JSON.parse(fs.readFileSync(ptFile))  : null;
+      const fh = fs.existsSync(fhFile)  ? JSON.parse(fs.readFileSync(fhFile))  : null;
+
+      if (!ig) throw new Error('Geen Instagram data beschikbaar. Doe eerst een refresh.');
+
+      // Filter posts van de afgelopen 30 dagen (of alle als er niet genoeg zijn)
+      const now  = new Date();
+      const ago30 = new Date(now - 30 * 24 * 60 * 60 * 1000);
+      let posts = (ig.posts_data || []).map(p => ({ ...p, engScore: p.engScore || (p.likes + p.comments + (p.saves||0)) }));
+      const recent = posts.filter(p => p.timestamp && new Date(p.timestamp) >= ago30);
+      const analysePosts = recent.length >= 3 ? recent : posts;
+      analysePosts.sort((a, b) => b.engScore - a.engScore);
+
+      // Follower groei afgelopen 30 dagen
+      let followerGrowth = null;
+      if (fh) {
+        const igHistory = fh.filter(h => h.platform === 'instagram').sort((a,b) => new Date(a.timestamp)-new Date(b.timestamp));
+        const oldest30 = igHistory.filter(h => new Date(h.timestamp) <= ago30).pop();
+        if (oldest30) followerGrowth = ig.followers - oldest30.followers;
+      }
+
+      // Posttijden log samenvatting
+      const ptEntries = (pt?.entries || []).filter(e => e.platform === 'instagram');
+      const dayNames  = ['Maandag','Dinsdag','Woensdag','Donderdag','Vrijdag','Zaterdag','Zondag'];
+      const byDay = Array.from({length:7}, (_,i) => {
+        const items = ptEntries.filter(e => e.day === i);
+        return { dag: dayNames[i], posts: items.length, gemEng: items.length ? Math.round(items.reduce((s,e)=>s+e.engagement,0)/items.length) : 0 };
+      }).filter(d => d.posts > 0).sort((a,b) => b.gemEng - a.gemEng);
+
+      // Bouw de analyse prompt
+      const topPosts = analysePosts.slice(0, 5);
+      const avgEng   = analysePosts.length ? Math.round(analysePosts.reduce((s,p)=>s+p.engScore,0)/analysePosts.length) : 0;
+
+      const prompt = `Je bent een social media analist voor Slice Media (Instagram: @${IG_USERNAME}).
+Analyseer de volgende Instagram data en schrijf een maandrapport in het Nederlands.
+
+ACCOUNT STATUS:
+- Volgers: ${ig.followers}
+- Totaal posts: ${ig.posts}
+${followerGrowth !== null ? `- Follower groei (30d): ${followerGrowth >= 0 ? '+' : ''}${followerGrowth}` : ''}
+- Gemiddelde engagement score (likes+comments+saves): ${avgEng}
+
+TOP ${topPosts.length} BEST PRESTERENDE POSTS${recent.length >= 3 ? ' (afgelopen 30 dagen)' : ' (alle beschikbare data)'}:
+${topPosts.map((p,i) => `${i+1}. "${p.title}"
+   Gepubliceerd: ${p.date} | Dag: ${p.timestamp ? dayNames[(new Date(p.timestamp).getDay()+6)%7] : '?'} | Tijdstip: ${p.timestamp ? new Date(p.timestamp).toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'}) : '?'}
+   Likes: ${p.likes} | Comments: ${p.comments} | Saves: ${p.saves||0} | Views: ${p.views||0} | EngScore: ${p.engScore}`).join('\n\n')}
+
+ALLE GEANALYSEERDE POSTS (${analysePosts.length} stuks):
+${analysePosts.map(p => `- "${p.title.substring(0,60)}" → EngScore ${p.engScore} (${p.date})`).join('\n')}
+
+BESTE POSTDAGEN (op basis van historische engagement):
+${byDay.slice(0,4).map(d => `- ${d.dag}: gem. ${d.gemEng} engagement (${d.posts} posts)`).join('\n') || '- Nog niet genoeg data'}
+
+Schrijf het rapport in deze structuur:
+
+## Wat werkte goed
+Analyseer de top posts. Kijk naar: thema, format-signalen (bijv. "COMMENT voor link", vragen stellen, storytelling), toon, tijdstip. Wat hebben de best presterende posts gemeen?
+
+## Patronen in alle content
+Wat zie je breed over alle posts? Welke thema's/formats scoren consistent? Wat valt juist tegen?
+
+## Maandadvies
+Geef 4-5 concrete, actiegerichte adviezen voor de komende maand. Gebaseerd op de data. Kort en direct.
+
+Schrijf in jouw-stijl: professioneel maar direct. Geen wollig taalgebruik.`;
+
+      let analyse = '';
+      try {
+        analyse = await generateWithClaude(prompt, 'Je bent een scherpe social media analist. Schrijf altijd in het Nederlands. Geen opsommingen met bullets tenzij gevraagd. Gebruik koppen zoals aangegeven.');
+      } catch(e) {
+        analyse = `_Claude CLI niet beschikbaar: ${e.message}_\n\nInstalleer de Claude CLI om AI-analyse te activeren.`;
+      }
+
+      const report = {
+        generated_at: new Date().toISOString(),
+        period: recent.length >= 3 ? 'laatste 30 dagen' : 'alle beschikbare data',
+        account: { followers: ig.followers, follower_growth_30d: followerGrowth },
+        top_posts: topPosts,
+        avg_engagement: avgEng,
+        posts_analyzed: analysePosts.length,
+        best_days: byDay.slice(0,4),
+        analyse,
+      };
+
+      fs.writeFileSync(path.join(DATA_DIR, 'monthly_report.json'), JSON.stringify(report, null, 2));
+      console.log('  Monthly report generated.');
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(report));
+    } catch(e) {
+      console.error('Monthly report error:', e.message);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: e.message }));
+    }
+    return;
+  }
+
   // ── GET /debug/instagram ───────────────────────────────
   if (req.method === 'GET' && url === '/debug/instagram') {
     try {
